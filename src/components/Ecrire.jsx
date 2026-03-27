@@ -33,6 +33,33 @@ export default function Ecrire({ onSave }) {
     <div>
       <h2>Nouvelle entrée</h2>
 
+      <input
+        type="text"
+        placeholder="Titre (optionnel)"
+        value={titre}
+        onChange={(e) => setTitre(e.target.value)}
+      />
+
+      <textarea
+        placeholder="Écris ton entrée ici..."
+        value={contenu}
+        onChange={(e) => setContenu(e.target.value)}
+      />
+
       <div>
         <p>Humeur du jour :</p>
         {['😄 Bien', '😐 Neutre', '😞 Difficile', '💪 Fort', '🙏 En paix'].map(m => (
+          <button
+            key={m}
+            onClick={() => setMood(m)}
+            style={{ fontWeight: mood === m ? 'bold' : 'normal' }}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
+
+        <button onClick={sauvegarder}>Sauvegarder</button>
+      </div>
+    )
+  }

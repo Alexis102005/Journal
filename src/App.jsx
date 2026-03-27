@@ -14,7 +14,7 @@ export default function App() {
   return (
     <div>
       <div>
-        {ecran === 'accueil' && <Accueil />}
+        {ecran === 'accueil' && <Accueil entrees={entrees} />}
         {ecran === 'ecrire'  && <Ecrire onSave={ajouterEntree} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} />}
       </div>
