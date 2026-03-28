@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Ecrire({ onSave }) {
+export default function Ecrire({ onSave, setEcran }) {
   const [titre, setTitre] = useState('')
   const [contenu, setContenu] = useState('')
   const [mood, setMood] = useState('')
@@ -11,10 +11,7 @@ export default function Ecrire({ onSave }) {
     const entree = {
       id: Date.now(),
       date: new Date().toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
       }),
       titre: titre || 'Sans titre',
       contenu,
@@ -26,40 +23,47 @@ export default function Ecrire({ onSave }) {
     setTitre('')
     setContenu('')
     setMood('')
-    alert('Entrée sauvegardée ✓')
+    setEcran('entrees')
   }
 
   return (
-    <div>
+    <div className="ecran">
       <h2>Nouvelle entrée</h2>
 
+      <div className="mood-section">
+        <p className="section-label">Humeur du jour</p>
+        <div className="mood-chips">
+          {['😄 Bien', '😐 Neutre', '😞 Difficile', '💪 Fort', '🙏 En paix'].map(m => (
+            <button
+              key={m}
+              onClick={() => setMood(m)}
+              className={`chip ${mood === m ? 'actif' : ''}`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <input
+        className="input-titre"
         type="text"
         placeholder="Titre (optionnel)"
         value={titre}
-        onChange={(e) => setTitre(e.target.value)}
+        onChange={e => setTitre(e.target.value)}
       />
 
       <textarea
-        placeholder="Écris ton entrée ici..."
+        className="textarea-contenu"
+        placeholder="Qu'as-tu vécu aujourd'hui ? Quelles pensées t'ont traversé ?"
         value={contenu}
-        onChange={(e) => setContenu(e.target.value)}
+        onChange={e => setContenu(e.target.value)}
+        rows={8}
       />
 
-      <div>
-        <p>Humeur du jour :</p>
-        {['😄 Bien', '😐 Neutre', '😞 Difficile', '💪 Fort', '🙏 En paix'].map(m => (
-          <button
-            key={m}
-            onClick={() => setMood(m)}
-            style={{ fontWeight: mood === m ? 'bold' : 'normal' }}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-
-        <button onClick={sauvegarder}>Sauvegarder</button>
-      </div>
-    )
-  }
+      <button className="btn-save" onClick={sauvegarder}>
+        Sauvegarder
+      </button>
+    </div>
+  )
+}

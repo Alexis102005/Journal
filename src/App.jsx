@@ -1,28 +1,42 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Accueil from './components/Accueil'
 import Ecrire from './components/Ecrire'
 import Entrees from './components/Entrees'
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
-  const [entrees, setEntrees] = useState([])
+
+  const [entrees, setEntrees] = useState(() => {
+    const saved = localStorage.getItem('journal_entrees')
+    return saved ? JSON.parse(saved) : []
+  })
+
+  useEffect(() => {
+    localStorage.setItem('journal_entrees', JSON.stringify(entrees))
+  }, [entrees])
 
   const ajouterEntree = (entree) => {
     setEntrees([entree, ...entrees])
   }
 
   return (
-    <div>
-      <div>
-        {ecran === 'accueil' && <Accueil entrees={entrees} />}
-        {ecran === 'ecrire'  && <Ecrire onSave={ajouterEntree} />}
-        {ecran === 'entrees' && <Entrees entrees={entrees} />}
+    <div className="app">
+      <div className="contenu">
+        {ecran === 'accueil'  && <Accueil entrees={entrees} />}
+        {ecran === 'ecrire'   && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
+        {ecran === 'entrees'  && <Entrees entrees={entrees} />}
       </div>
 
-      <nav>
-        <button onClick={() => setEcran('accueil')}>🏠 Accueil</button>
-        <button onClick={() => setEcran('ecrire')}>✏️ Écrire</button>
-        <button onClick={() => setEcran('entrees')}>📓 Entrées</button>
+      <nav className="nav-bar">
+        <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
+          🏠<span>Accueil</span>
+        </button>
+        <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
+          ✏️<span>Écrire</span>
+        </button>
+        <button onClick={() => setEcran('entrees')} className={ecran === 'entrees' ? 'actif' : ''}>
+          📓<span>Entrées</span>
+        </button>
       </nav>
     </div>
   )
