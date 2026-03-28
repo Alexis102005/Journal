@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Accueil from './components/Accueil'
 import Ecrire from './components/Ecrire'
 import Entrees from './components/Entrees'
+import Parole from './components/Parole'
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -25,17 +26,21 @@ export default function App() {
         {ecran === 'accueil'  && <Accueil entrees={entrees} />}
         {ecran === 'ecrire'   && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
         {ecran === 'entrees'  && <Entrees entrees={entrees} />}
+        {ecran === 'parole' && <Parole />}
       </div>
 
       <nav className="nav-bar">
         <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
-          🏠<span>Accueil</span>
+        🏠<span>Accueil</span>
+          </button>
+        <button onClick={() => setEcran('parole')} className={ecran === 'parole' ? 'actif' : ''}>
+         📖<span>Parole</span>
         </button>
         <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
-          ✏️<span>Écrire</span>
+        ✏️<span>Écrire</span>
         </button>
         <button onClick={() => setEcran('entrees')} className={ecran === 'entrees' ? 'actif' : ''}>
-          📓<span>Entrées</span>
+        📓 <span>Entrées</span>
         </button>
       </nav>
     </div>
