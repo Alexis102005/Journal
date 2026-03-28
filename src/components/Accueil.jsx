@@ -37,7 +37,7 @@ export default function Accueil({ entrees }) {
     const date = new Date()
     const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
 
-    fetch(`https://corsproxy.io/?https://api.aelf.org/v1/messes/${dateStr}/france`)
+    fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.aelf.org/v1/messes/${dateStr}/france`)}`)
       .then(res => res.json())
       .then(data => {
         const lectures = data.messe?.lectures
