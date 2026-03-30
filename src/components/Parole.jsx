@@ -21,6 +21,9 @@ export default function Parole() {
     lecture1_ref: '',
     lecture1_mots: '',
     lecture1_resume: '',
+    lecture2_ref: '',        
+    lecture2_mots: '',       
+    lecture2_resume: '',
     psaume_verset: '',
     evangile_ref: '',
     evangile_mots: '',
@@ -128,6 +131,18 @@ export default function Parole() {
             </div>
           )}
 
+          {parole.lecture2_ref && (
+            <div className="card" style={{ marginBottom: '12px' }}>
+              <p className="section-label" style={{ color: '#3a6d7a' }}>📘 2ÈME LECTURE — {parole.lecture2_ref}</p>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0' }}>
+              {parole.lecture2_mots.split(',').map(m => m.trim()).filter(Boolean).map(mot => (
+              <span key={mot} style={{ background: '#e8f4f8', color: '#3a6d7a', padding: '3px 10px', borderRadius: '20px', fontSize: '12px' }}>{mot}</span>
+            ))}
+            </div>
+              <p style={{ fontSize: '13px', color: '#4a4a4a', lineHeight: '1.7', fontStyle: 'italic' }}>{parole.lecture2_resume}</p>
+            </div>
+        )}
+
           <div className="card" style={{ marginBottom: '12px' }}>
             <p className="section-label" style={{ color: '#a05030' }}>📕 ÉVANGILE — {parole.evangile_ref}</p>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0' }}>
@@ -161,6 +176,13 @@ export default function Parole() {
           <div className="card" style={{ marginBottom: '12px' }}>
             <p className="section-label" style={{ color: '#6b63d4' }}>🎵 PSAUME</p>
             <input className="input-titre" placeholder="Verset essentiel..." value={form.psaume_verset} onChange={e => setForm({...form, psaume_verset: e.target.value})} />
+          </div>
+
+          <div className="card" style={{ marginBottom: '12px' }}>
+            <p className="section-label" style={{ color: '#3a6d7a' }}>📘 2ÈME LECTURE (optionnel)</p>
+            <input className="input-titre" placeholder="Référence (ex: Col 3, 1-4)" value={form.lecture2_ref} onChange={e => setForm({...form, lecture2_ref: e.target.value})} />
+            <input className="input-titre" placeholder="Mots clés (séparés par virgules)" value={form.lecture2_mots} onChange={e => setForm({...form, lecture2_mots: e.target.value})} />
+            <textarea className="textarea-contenu" rows={3} placeholder="Résumé..." value={form.lecture2_resume} onChange={e => setForm({...form, lecture2_resume: e.target.value})} />
           </div>
 
           <div className="card" style={{ marginBottom: '12px' }}>
