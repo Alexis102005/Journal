@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import Accueil from './components/Accueil'
 import Ecrire from './components/Ecrire'
 import Entrees from './components/Entrees'
-import Parole from './components/Parole'
+import Parole from './components/ParoleAuto'
+
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
