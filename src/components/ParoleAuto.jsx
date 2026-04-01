@@ -65,12 +65,12 @@ Texte : ${texte.slice(0, 2000)}
 Réponds en JSON uniquement, sans markdown, sans backticks :
 {"ref":"référence courte","mots_cles":["mot1","mot2","mot3"],"resume":"résumé en 2-3 phrases simples et spirituelles"}`
 
- const response = await fetch('/api/resumeLecture', {
+const response = await fetch('/.netlify/functions/resumeLecture', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ texte, ref: lecture.ref || lecture.titre || '' })
 })
-const parsed = await response.json()
+const parsed = await response.json() 
 
   const aiData = await response.json()
   const texteReponse = aiData.content?.[0]?.text || '{}'

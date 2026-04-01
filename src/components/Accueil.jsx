@@ -32,18 +32,9 @@ export default function Accueil({ entrees }) {
   const totalMots = entrees.reduce((acc, e) => acc + e.mots, 0)
 
   useEffect(() => {
-  const date = new Date()
-  const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
-
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 5000)
-
-  fetch(`https://corsproxy.io/?url=${encodeURIComponent(`https://api.aelf.org/v1/messes/${dateStr}/france`)}`, 
-    { signal: controller.signal }
-  )
+  fetch('/.netlify/functions/liturgie')
     .then(res => res.json())
     .then(data => {
-      clearTimeout(timeout)
       const lectures = data.messes?.[0]?.lectures
       if (lectures && lectures.length > 0) {
         setLiturgie({
@@ -55,7 +46,6 @@ export default function Accueil({ entrees }) {
       setChargement(false)
     })
     .catch(() => {
-      clearTimeout(timeout)
       setLiturgie(null)
       setChargement(false)
     })
