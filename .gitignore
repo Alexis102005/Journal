@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.agents
+.claude
+.vscode
+functions/
+dist/
