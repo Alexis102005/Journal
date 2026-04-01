@@ -65,20 +65,12 @@ Texte : ${texte.slice(0, 2000)}
 Réponds en JSON uniquement, sans markdown, sans backticks :
 {"ref":"référence courte","mots_cles":["mot1","mot2","mot3"],"resume":"résumé en 2-3 phrases simples et spirituelles"}`
 
- const response = await fetch('https://api.anthropic.com/v1/messages', {
+ const response = await fetch('/api/resumeLecture', {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'x-api-key': import.meta.env.VITE_ANTHROPIC_KEY,
-    'anthropic-version': '2023-06-01',
-    'anthropic-dangerous-allow-browser': 'true'
-  },
-  body: JSON.stringify({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 500,
-    messages: [{ role: 'user', content: prompt }]
-  })
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ texte, ref: lecture.ref || lecture.titre || '' })
 })
+const parsed = await response.json()
 
   const aiData = await response.json()
   const texteReponse = aiData.content?.[0]?.text || '{}'
