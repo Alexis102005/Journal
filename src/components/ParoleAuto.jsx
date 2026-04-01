@@ -45,64 +45,36 @@ export default function ParoleAuto() {
   const genererResumes = async () => {
     setGenerationEnCours(true)
     try {
-      const dateStr = today
-      const url = `https://corsproxy.io/?url=${encodeURIComponent(`https://api.aelf.org/v1/messes/${dateStr}/france`)}`
-      const res = await fetch(url)
+      const res = await fetch('/.netlify/functions/liturgie')
       const data = await res.json()
       const lectures = data.messes?.[0]?.lectures || []
 
       const resultats = {}
 
       for (const lecture of lectures) {
-  const texte = lecture.contenu?.replace(/<[^>]*>/g, '') || ''
-  if (!texte) continue
+        const texte = lecture.contenu?.replace(/<[^>]*>/g, '') || ''
+        if (!texte) continue
 
-  const prompt = `Tu es un assistant spirituel catholique. Voici une lecture liturgique :
+        const response = await fetch('/.netlify/functions/resumeLecture', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texte, ref: lecture.ref || lecture.titre || '' })
+        })
+        const parsed = await response.json()
+        const type = lecture.type?.toLowerCase() || ''
 
-Référence : ${lecture.ref || lecture.titre || ''}
-Texte : ${texte.slice(0, 2000)}
-
-Réponds en JSON uniquement, sans markdown, sans backticks :
-{"ref":"référence courte","mots_cles":["mot1","mot2","mot3"],"resume":"résumé en 2-3 phrases simples et spirituelles"}`
-
-const response = await fetch('/.netlify/functions/resumeLecture', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ texte, ref: lecture.ref || lecture.titre || '' })
-})
-const parsed = await response.json() 
-
-  const aiData = await response.json()
-  const texteReponse = aiData.content?.[0]?.text || '{}'
-  const clean = texteReponse.replace(/```json|```/g, '').trim()
-  
-  try {
-    const parsed = JSON.parse(clean)
-    const type = lecture.type?.toLowerCase() || ''
-    
-    console.log('type lecture:', type, lecture.type)
-    
-    if (type.includes('evangile')) {
-      resultats.evangile = parsed
-    } else if (type.includes('psaume')) {
-      resultats.psaume = parsed
-    } else if (type.includes('lecture_2') || type.includes('lecture2')) {
-      resultats.lecture2 = parsed
-    } else {
-      resultats.lecture1 = parsed
-    }
-  } catch(e) {
-    console.log('Parse error:', e, texteReponse)
-  }
-}
-
-      const docData = {
-        ...resultats,
-        reflexion,
-        source,
-        date: today
+        if (type.includes('evangile')) {
+          resultats.evangile = parsed
+        } else if (type.includes('psaume')) {
+          resultats.psaume = parsed
+        } else if (type.includes('lecture_2') || type.includes('lecture2')) {
+          resultats.lecture2 = parsed
+        } else {
+          resultats.lecture1 = parsed
+        }
       }
 
+      const docData = { ...resultats, reflexion, source, date: today }
       await setDoc(doc(db, 'paroles', today), docData)
       setParole(docData)
       setMode('voir')
@@ -144,7 +116,6 @@ const parsed = await response.json()
         )}
       </div>
 
-      {/* AUTH */}
       {mode === 'auth' && (
         <div className="card">
           <p className="section-label">MOT DE PASSE ADMIN</p>
@@ -153,31 +124,21 @@ const parsed = await response.json()
         </div>
       )}
 
-      {/* EDITER */}
       {mode === 'editer' && adminOk && (
         <div>
-          <button
-            className="btn-save"
-            onClick={genererResumes}
-            disabled={generationEnCours}
-            style={{ marginBottom: '16px', background: generationEnCours ? '#b0a8f0' : '#6b63d4' }}
-          >
+          <button className="btn-save" onClick={genererResumes} disabled={generationEnCours}
+            style={{ marginBottom: '16px', background: generationEnCours ? '#b0a8f0' : '#6b63d4' }}>
             {generationEnCours ? '⏳ Génération en cours...' : '✨ Générer les résumés avec l\'IA'}
           </button>
-
           <div className="card" style={{ marginBottom: '12px' }}>
             <p className="section-label" style={{ color: '#6b63d4' }}>✦ TA RÉFLEXION PERSONNELLE</p>
             <textarea className="textarea-contenu" rows={5} placeholder="Ton résumé de l'homélie ou ta réflexion personnelle..." value={reflexion} onChange={e => setReflexion(e.target.value)} />
             <input className="input-titre" placeholder="Source (ex: Père Francis Goossens)" value={source} onChange={e => setSource(e.target.value)} style={{ marginTop: '8px' }} />
           </div>
-
-          <button className="btn-save" onClick={sauvegarderReflexion}>
-            Sauvegarder
-          </button>
+          <button className="btn-save" onClick={sauvegarderReflexion}>Sauvegarder</button>
         </div>
       )}
 
-      {/* VOIR */}
       {mode === 'voir' && !parole && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: '#b0a89c' }}>
           <p style={{ fontSize: '32px', marginBottom: '12px' }}>📖</p>
@@ -199,7 +160,6 @@ const parsed = await response.json()
               <p style={{ fontSize: '13px', color: '#4a4a4a', lineHeight: '1.7', fontStyle: 'italic' }}>{parole.lecture1.resume}</p>
             </div>
           )}
-
           {parole.lecture2 && (
             <div className="card" style={{ marginBottom: '12px' }}>
               <p className="section-label" style={{ color: '#3a6d7a' }}>📘 2ÈME LECTURE — {parole.lecture2.ref}</p>
@@ -211,14 +171,12 @@ const parsed = await response.json()
               <p style={{ fontSize: '13px', color: '#4a4a4a', lineHeight: '1.7', fontStyle: 'italic' }}>{parole.lecture2.resume}</p>
             </div>
           )}
-
           {parole.psaume && (
             <div style={{ background: '#f0eefc', border: '0.5px solid #dcd8f5', borderRadius: '12px', padding: '12px 16px', marginBottom: '12px' }}>
               <p className="section-label" style={{ color: '#6b63d4' }}>🎵 PSAUME</p>
               <p style={{ fontSize: '14px', color: '#4a4460', fontStyle: 'italic', lineHeight: '1.7' }}>« {parole.psaume.resume} »</p>
             </div>
           )}
-
           {parole.evangile && (
             <div className="card" style={{ marginBottom: '12px' }}>
               <p className="section-label" style={{ color: '#a05030' }}>📕 ÉVANGILE — {parole.evangile.ref}</p>
@@ -230,7 +188,6 @@ const parsed = await response.json()
               <p style={{ fontSize: '13px', color: '#4a4a4a', lineHeight: '1.7', fontStyle: 'italic' }}>{parole.evangile.resume}</p>
             </div>
           )}
-
           {parole.reflexion && (
             <div style={{ borderLeft: '3px solid #6b63d4', paddingLeft: '14px', marginBottom: '12px' }}>
               <p className="section-label" style={{ color: '#6b63d4' }}>✦ RÉFLEXION</p>
