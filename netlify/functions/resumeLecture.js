@@ -43,6 +43,8 @@ Réponds en JSON uniquement, sans markdown, sans backticks :
     req.end()
   })
 
+  console.log('Anthropic response:', JSON.stringify(data))
+
   const texteReponse = data.content?.[0]?.text || '{}'
   const clean = texteReponse.replace(/```json|```/g, '').trim()
 
@@ -56,7 +58,7 @@ Réponds en JSON uniquement, sans markdown, sans backticks :
   } catch(e) {
     return { 
       statusCode: 500, 
-      body: JSON.stringify({ error: 'Parse error', raw: texteReponse }) 
+      body: JSON.stringify({ error: 'Parse error', raw: texteReponse, fullData: data }) 
     }
   }
 }
