@@ -8,7 +8,7 @@ exports.handler = async (event) => {
   const { texte, ref } = JSON.parse(event.body)
 
   const requestBody = JSON.stringify({
-    model: 'claude-sonnet-4-20250514',
+    model: 'llama-3.1-8b-instant',
     max_tokens: 500,
     messages: [{
       role: 'user',
@@ -24,13 +24,12 @@ Réponds en JSON uniquement, sans markdown, sans backticks :
 
   const data = await new Promise((resolve, reject) => {
     const req = https.request({
-      hostname: 'api.anthropic.com',
-      path: '/v1/messages',
+      hostname: 'api.groq.com',
+      path: '/openai/v1/chat/completions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${process.env.GROQ_KEY}`,
         'Content-Length': Buffer.byteLength(requestBody)
       }
     }, (res) => {
@@ -43,9 +42,9 @@ Réponds en JSON uniquement, sans markdown, sans backticks :
     req.end()
   })
 
-  console.log('Anthropic response:', JSON.stringify(data))
+  console.log('Groq response:', JSON.stringify(data))
 
-  const texteReponse = data.content?.[0]?.text || '{}'
+  const texteReponse = data.choices?.[0]?.message?.content || '{}'
   const clean = texteReponse.replace(/```json|```/g, '').trim()
 
   try {
@@ -58,7 +57,7 @@ Réponds en JSON uniquement, sans markdown, sans backticks :
   } catch(e) {
     return { 
       statusCode: 500, 
-      body: JSON.stringify({ error: 'Parse error', raw: texteReponse, fullData: data }) 
+      body: JSON.stringify({ error: 'Parse error', raw: texteReponse }) 
     }
   }
 }
