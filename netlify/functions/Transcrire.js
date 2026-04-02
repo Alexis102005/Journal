@@ -1,5 +1,4 @@
 const https = require('https')
-const { Readable } = require('stream')
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -7,10 +6,8 @@ exports.handler = async (event) => {
   }
 
   const contentType = event.headers['content-type'] || ''
-  const boundary = contentType.split('boundary=')[1]
-  
   const body = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8')
-  
+
   const data = await new Promise((resolve, reject) => {
     const req = https.request({
       hostname: 'api.groq.com',
@@ -24,12 +21,17 @@ exports.handler = async (event) => {
     }, (res) => {
       let responseBody = ''
       res.on('data', chunk => responseBody += chunk)
-      res.on('end', () => resolve(JSON.parse(responseBody)))
+      res.on('end', () => {
+        try { resolve(JSON.parse(responseBody)) }
+        catch(e) { resolve({ error: responseBody }) }
+      })
     })
     req.on('error', reject)
     req.write(body)
     req.end()
   })
+
+  console.log('Groq transcription response:', JSON.stringify(data))
 
   return {
     statusCode: 200,
