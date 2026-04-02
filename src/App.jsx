@@ -12,6 +12,13 @@ export default function App() {
     const saved = localStorage.getItem('journal_entrees')
     return saved ? JSON.parse(saved) : []
   })
+  const mettreAJourEntree = (entreeModifiee) => {
+  setEntrees(entrees.map(e => e.id === entreeModifiee.id ? entreeModifiee : e))
+}
+
+const supprimerEntree = (id) => {
+  setEntrees(entrees.filter(e => e.id !== id))
+}
 
   useEffect(() => {
     localStorage.setItem('journal_entrees', JSON.stringify(entrees))
@@ -26,7 +33,7 @@ export default function App() {
       <div className="contenu">
         {ecran === 'accueil'  && <Accueil entrees={entrees} />}
         {ecran === 'ecrire'   && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
-        {ecran === 'entrees'  && <Entrees entrees={entrees} />}
+        {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole />}
       </div>
 
