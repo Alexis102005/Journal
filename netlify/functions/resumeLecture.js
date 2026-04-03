@@ -1,3 +1,4 @@
+// netlify/functions/resumeLecture.js
 const https = require('https')
 
 exports.handler = async (event) => {
@@ -5,20 +6,26 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method not allowed' }
   }
 
-  const { texte, ref } = JSON.parse(event.body)
+  const { lectures } = JSON.parse(event.body)
+  // lectures = [{ ref, texte, type }, ...]
+
+  // On concatene toutes les lectures en un seul bloc
+  const lecturesFormatees = lectures.map(l => 
+    `[${l.type || l.ref}]\n${l.texte.slice(0, 1500)}`
+  ).join('\n\n---\n\n')
 
   const requestBody = JSON.stringify({
     model: 'llama-3.1-8b-instant',
-    max_tokens: 500,
+    max_tokens: 600,
     messages: [{
       role: 'user',
-      content: `Tu es un assistant spirituel catholique. Voici une lecture liturgique :
+      content: `Tu es un assistant spirituel catholique. Voici les lectures liturgiques du jour :
 
-Référence : ${ref}
-Texte : ${texte.slice(0, 2000)}
+${lecturesFormatees}
 
+À partir de TOUTES ces lectures, donne une synthèse spirituelle unifiée.
 Réponds en JSON uniquement, sans markdown, sans backticks :
-{"ref":"référence courte","mots_cles":["mot1","mot2","mot3"],"resume":"résumé en 2-3 phrases simples et spirituelles"}`
+{"mots_cles":["mot1","mot2","mot3"],"resume":"synthèse spirituelle en 3-4 phrases qui relie toutes les lectures du jour"}`
     }]
   })
 
@@ -42,8 +49,6 @@ Réponds en JSON uniquement, sans markdown, sans backticks :
     req.end()
   })
 
-  console.log('Groq response:', JSON.stringify(data))
-
   const texteReponse = data.choices?.[0]?.message?.content || '{}'
   const clean = texteReponse.replace(/```json|```/g, '').trim()
 
@@ -55,9 +60,9 @@ Réponds en JSON uniquement, sans markdown, sans backticks :
       body: JSON.stringify(parsed)
     }
   } catch(e) {
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: 'Parse error', raw: texteReponse }) 
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Parse error', raw: texteReponse })
     }
   }
 }

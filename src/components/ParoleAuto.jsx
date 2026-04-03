@@ -43,49 +43,41 @@ export default function ParoleAuto() {
   }
 
   const genererResumes = async () => {
-    setGenerationEnCours(true)
-    try {
-      const res = await fetch('/.netlify/functions/liturgie')
-      const data = await res.json()
-      const lectures = data.messes?.[0]?.lectures || []
+  setGenerationEnCours(true)
+  try {
+    const res = await fetch('/.netlify/functions/liturgie')
+    const data = await res.json()
+    const lecturesBrutes = data.messes?.[0]?.lectures || []
 
-      const resultats = {}
+    // On prépare toutes les lectures en un seul tableau
+    const lectures = lecturesBrutes
+      .map(l => ({
+        ref: l.ref || l.titre || '',
+        type: l.type || l.titre || '',
+        texte: l.contenu?.replace(/<[^>]*>/g, '') || ''
+      }))
+      .filter(l => l.texte.length > 0)
 
-      for (const lecture of lectures) {
-        const texte = lecture.contenu?.replace(/<[^>]*>/g, '') || ''
-        if (!texte) continue
+    // Un seul appel pour tout résumer
+    const response = await fetch('/.netlify/functions/resumeLecture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lectures })
+    })
+    const synthese = await response.json()
 
-        const response = await fetch('/.netlify/functions/resumeLecture', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texte, ref: lecture.ref || lecture.titre || '' })
-        })
-        const parsed = await response.json()
-        const type = lecture.type?.toLowerCase() || ''
+    const docData = { synthese, reflexion, source, date: today }
+    await setDoc(doc(db, 'paroles', today), docData)
+    setParole(docData)
+    setMode('voir')
+    setAdminOk(false)
 
-        if (type.includes('evangile')) {
-          resultats.evangile = parsed
-        } else if (type.includes('psaume')) {
-          resultats.psaume = parsed
-        } else if (type.includes('lecture_2') || type.includes('lecture2')) {
-          resultats.lecture2 = parsed
-        } else {
-          resultats.lecture1 = parsed
-        }
-      }
-
-      const docData = { ...resultats, reflexion, source, date: today }
-      await setDoc(doc(db, 'paroles', today), docData)
-      setParole(docData)
-      setMode('voir')
-      setAdminOk(false)
-
-    } catch (err) {
-      console.error(err)
-      alert('Erreur lors de la génération. Réessaie.')
-    }
-    setGenerationEnCours(false)
+  } catch (err) {
+    console.error(err)
+    alert('Erreur lors de la génération. Réessaie.')
   }
+  setGenerationEnCours(false)
+}
 
   const sauvegarderReflexion = async () => {
     const updated = { ...parole, reflexion, source }
@@ -146,57 +138,31 @@ export default function ParoleAuto() {
           <p style={{ fontSize: '13px', marginTop: '8px' }}>Appuie sur Admin pour générer.</p>
         </div>
       )}
-
       {mode === 'voir' && parole && (
-        <div>
-          {parole.lecture1 && (
-            <div className="card" style={{ marginBottom: '12px' }}>
-              <p className="section-label" style={{ color: '#3a7d5a' }}>📗 1ÈRE LECTURE — {parole.lecture1.ref}</p>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0' }}>
-                {parole.lecture1.mots_cles?.map(mot => (
-                  <span key={mot} style={{ background: '#e8f4ef', color: '#3a7d5a', padding: '3px 10px', borderRadius: '20px', fontSize: '12px' }}>{mot}</span>
-                ))}
-              </div>
-              <p style={{ fontSize: '13px', color: '#4a4a4a', lineHeight: '1.7', fontStyle: 'italic' }}>{parole.lecture1.resume}</p>
-            </div>
-          )}
-          {parole.lecture2 && (
-            <div className="card" style={{ marginBottom: '12px' }}>
-              <p className="section-label" style={{ color: '#3a6d7a' }}>📘 2ÈME LECTURE — {parole.lecture2.ref}</p>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0' }}>
-                {parole.lecture2.mots_cles?.map(mot => (
-                  <span key={mot} style={{ background: '#e8f4f8', color: '#3a6d7a', padding: '3px 10px', borderRadius: '20px', fontSize: '12px' }}>{mot}</span>
-                ))}
-              </div>
-              <p style={{ fontSize: '13px', color: '#4a4a4a', lineHeight: '1.7', fontStyle: 'italic' }}>{parole.lecture2.resume}</p>
-            </div>
-          )}
-          {parole.psaume && (
-            <div style={{ background: '#f0eefc', border: '0.5px solid #dcd8f5', borderRadius: '12px', padding: '12px 16px', marginBottom: '12px' }}>
-              <p className="section-label" style={{ color: '#6b63d4' }}>🎵 PSAUME</p>
-              <p style={{ fontSize: '14px', color: '#4a4460', fontStyle: 'italic', lineHeight: '1.7' }}>« {parole.psaume.resume} »</p>
-            </div>
-          )}
-          {parole.evangile && (
-            <div className="card" style={{ marginBottom: '12px' }}>
-              <p className="section-label" style={{ color: '#a05030' }}>📕 ÉVANGILE — {parole.evangile.ref}</p>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0' }}>
-                {parole.evangile.mots_cles?.map(mot => (
-                  <span key={mot} style={{ background: '#fff0e8', color: '#a05030', padding: '3px 10px', borderRadius: '20px', fontSize: '12px' }}>{mot}</span>
-                ))}
-              </div>
-              <p style={{ fontSize: '13px', color: '#4a4a4a', lineHeight: '1.7', fontStyle: 'italic' }}>{parole.evangile.resume}</p>
-            </div>
-          )}
-          {parole.reflexion && (
-            <div style={{ borderLeft: '3px solid #6b63d4', paddingLeft: '14px', marginBottom: '12px' }}>
-              <p className="section-label" style={{ color: '#6b63d4' }}>✦ RÉFLEXION</p>
-              <p style={{ fontSize: '14px', color: '#1e1b18', lineHeight: '1.8' }}>{parole.reflexion}</p>
-              {parole.source && <p style={{ fontSize: '11px', color: '#b0a89c', marginTop: '6px' }}>— {parole.source}</p>}
-            </div>
-          )}
+  <div>
+    {parole.synthese && (
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <p className="section-label" style={{ color: '#6b63d4' }}>✨ SYNTHÈSE DU JOUR</p>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0' }}>
+          {parole.synthese.mots_cles?.map(mot => (
+            <span key={mot} style={{ background: '#f0eefc', color: '#6b63d4', padding: '3px 10px', borderRadius: '20px', fontSize: '12px' }}>{mot}</span>
+          ))}
         </div>
-      )}
+        <p style={{ fontSize: '13px', color: '#4a4a4a', lineHeight: '1.7', fontStyle: 'italic' }}>
+          {parole.synthese.resume}
+        </p>
+      </div>
+    )}
+
+    {parole.reflexion && (
+      <div style={{ borderLeft: '3px solid #6b63d4', paddingLeft: '14px', marginBottom: '12px' }}>
+        <p className="section-label" style={{ color: '#6b63d4' }}>✦ RÉFLEXION</p>
+        <p style={{ fontSize: '14px', color: '#1e1b18', lineHeight: '1.8' }}>{parole.reflexion}</p>
+        {parole.source && <p style={{ fontSize: '11px', color: '#b0a89c', marginTop: '6px' }}>— {parole.source}</p>}
+      </div>
+    )}
+  </div>
+)}
     </div>
   )
 }
