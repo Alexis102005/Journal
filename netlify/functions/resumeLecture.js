@@ -7,9 +7,7 @@ exports.handler = async (event) => {
   }
 
   const { lectures } = JSON.parse(event.body)
-  // lectures = [{ ref, texte, type }, ...]
 
-  // On concatene toutes les lectures en un seul bloc
   const lecturesFormatees = lectures.map(l => 
     `[${l.type || l.ref}]\n${l.texte.slice(0, 1500)}`
   ).join('\n\n---\n\n')
