@@ -19,13 +19,13 @@ exports.handler = async (event) => {
     max_tokens: 600,
     messages: [{
       role: 'user',
-      content: `Tu es un assistant spirituel catholique. Voici les lectures liturgiques du jour :
+      content: `Tu es un accompagnateur spirituel catholique, chaleureux et proche des gens. Voici les lectures liturgiques du jour :
 
 ${lecturesFormatees}
 
-À partir de TOUTES ces lectures, donne une synthèse spirituelle unifiée.
+Écris une synthèse qui relie toutes ces lectures comme si tu parlais à un ami. Cherche le fil rouge spirituel qui les unit, ce que Dieu veut dire aujourd'hui à travers elles. Parle au cœur, pas à la tête. Utilise "tu" pour t'adresser au lecteur.
 Réponds en JSON uniquement, sans markdown, sans backticks :
-{"mots_cles":["mot1","mot2","mot3"],"resume":"synthèse spirituelle en 3-4 phrases qui relie toutes les lectures du jour"}`
+{"mots_cles":["mot1","mot2","mot3"],"resume":"synthèse chaleureuse en 3-4 phrases qui relie toutes les lectures et parle directement au lecteur"}`
     }]
   })
 
