@@ -85,6 +85,8 @@ export default function ParoleAuto() {
       const res = await fetch('/.netlify/functions/liturgie')
       const data = await res.json()
       const lecturesBrutes = data.messes?.[0]?.lectures || []
+      console.log('Lectures brutes:', lecturesBrutes)
+      console.log('Data complète:', JSON.stringify(data))
 
       const lectures = lecturesBrutes
         .map(l => ({
