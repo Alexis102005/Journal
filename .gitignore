@@ -27,3 +27,6 @@ dist-ssr
 .claude
 .vscode
 dist/
+# Local Netlify folder
+.netlify
+deno.lock

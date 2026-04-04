@@ -13,11 +13,11 @@ exports.handler = async (event) => {
   ).join('\n\n---\n\n')
 
   const requestBody = JSON.stringify({
-    model: 'llama-3.1-8b-instant',
+    model: 'llama-3.3-70b-versatile',
     max_tokens: 600,
     messages: [{
       role: 'user',
-      content: `Tu es un accompagnateur spirituel catholique, chaleureux et proche des gens. Voici les lectures liturgiques du jour :
+      content: `Tu es un accompagnateur spirituel catholique francophone. Tu t'exprimes UNIQUEMENT en français, avec une langue soignée, chaleureuse et sans fautes. Voici les lectures liturgiques du jour :
 
 ${lecturesFormatees}
 
