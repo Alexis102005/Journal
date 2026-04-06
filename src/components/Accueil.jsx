@@ -32,7 +32,7 @@ export default function Accueil({ entrees }) {
   const totalMots = entrees.reduce((acc, e) => acc + e.mots, 0)
 
   useEffect(() => {
-  fetch('/.netlify/functions/liturgie')
+  fetch('/api/liturgie')
     .then(res => res.json())
     .then(data => {
       const lectures = data.messes?.[0]?.lectures

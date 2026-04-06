@@ -82,7 +82,7 @@ export default function ParoleAuto() {
   const genererResumes = async () => {
     setGenerationEnCours(true)
     try {
-      const res = await fetch('/.netlify/functions/liturgie')
+      const res = await fetch('/api/liturgie')
       const data = await res.json()
       const lecturesBrutes = data.messes?.[0]?.lectures || []
       console.log('Lectures brutes:', lecturesBrutes)
@@ -96,7 +96,7 @@ export default function ParoleAuto() {
         }))
         .filter(l => l.texte.length > 0)
 
-      const response = await fetch('/.netlify/functions/resumeLecture', {
+      const response = await fetch('/api/resumeLecture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lectures })

@@ -63,7 +63,7 @@ const transcrire = async (blob) => {
   formData.append('language', 'fr')
 
   try {
-    const res = await fetch('/.netlify/functions/transcrire', {
+    const res = await fetch('/api/transcrire', {
       method: 'POST',
       body: formData
     })
