@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { traductions } from '../i18n'
 
-export default function Accueil({ entrees }) {
+export default function Accueil({ entrees, langue }) {
   const [liturgie, setLiturgie] = useState(null)
   const [liturgieOuverte, setLiturgieouverte] = useState(false)
   const [chargement, setChargement] = useState(true)
@@ -9,8 +9,10 @@ export default function Accueil({ entrees }) {
   const [assistantResultat, setAssistantResultat] = useState('')
   const [assistantType, setAssistantType] = useState('')
   const [assistantChargement, setAssistantChargement] = useState(false)
+
   const t = traductions[langue] || traductions.fr
-  const today = new Date().toLocaleDateString('fr-FR', {
+
+  const today = new Date().toLocaleDateString(langue === 'en' ? 'en-GB' : 'fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   })
 
@@ -56,50 +58,48 @@ export default function Accueil({ entrees }) {
   }, [])
 
   const appellerAssistant = async (type) => {
-  setAssistantType(type)
-  setAssistantChargement(true)
-  setAssistantResultat('')
-  try {
-    const res = await fetch('/api/liturgie')
-    const data = await res.json()
-    const lecturesBrutes = data.messes?.[0]?.lectures || []
-    const lectures = lecturesBrutes.map(l => ({
-      ref: l.ref || l.titre || '',
-      type: l.type || l.titre || '',
-      texte: l.contenu?.replace(/<[^>]*>/g, '') || ''
-    })).filter(l => l.texte.length > 0)
+    setAssistantType(type)
+    setAssistantChargement(true)
+    setAssistantResultat('')
+    try {
+      const res = await fetch('/api/liturgie')
+      const data = await res.json()
+      const lecturesBrutes = data.messes?.[0]?.lectures || []
+      const lectures = lecturesBrutes.map(l => ({
+        ref: l.ref || l.titre || '',
+        type: l.type || l.titre || '',
+        texte: l.contenu?.replace(/<[^>]*>/g, '') || ''
+      })).filter(l => l.texte.length > 0)
 
-    // Entrées de la semaine
-    const il7jours = new Date()
-    il7jours.setDate(il7jours.getDate() - 7)
-    const entreessemaine = entrees
-      .filter(e => new Date(e.id) >= il7jours)
-      .map(e => `[${new Date(e.id).toLocaleDateString('fr-FR')}]\n${e.contenu}`)
-      .join('\n\n---\n\n')
+      const il7jours = new Date()
+      il7jours.setDate(il7jours.getDate() - 7)
+      const entreeSemaine = entrees
+        .filter(e => new Date(e.id) >= il7jours)
+        .map(e => `[${new Date(e.id).toLocaleDateString('fr-FR')}]\n${e.contenu}`)
+        .join('\n\n---\n\n')
 
-    const response = await fetch('/api/assistant', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        type, 
-        lectures, 
-        mood,
-        entreeSemaine: entreesemaine,
-        // Pour résumé : on passe les entrées comme mood (réutilise le champ)
-        ...(type === 'resume' && { mood: entreesemaine || 'Aucune entrée cette semaine.' })
+      const response = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          lectures,
+          mood,
+          entreeSemaine,
+          ...(type === 'resume' && { mood: entreeSemaine || 'Aucune entrée cette semaine.' })
+        })
       })
-    })
-    const result = await response.json()
-    setAssistantResultat(result.texte)
-  } catch(e) {
-    setAssistantResultat('Erreur, réessaie.')
+      const result = await response.json()
+      setAssistantResultat(result.texte)
+    } catch(e) {
+      setAssistantResultat('Erreur, réessaie.')
+    }
+    setAssistantChargement(false)
   }
-  setAssistantChargement(false)
-}
 
   return (
     <div>
-      <h2>Bonjour 🌿</h2>
+      <h2>{t.bonjour} 🌿</h2>
       <p>{today}</p>
 
       <div
@@ -107,10 +107,10 @@ export default function Accueil({ entrees }) {
         style={{ border: '1px solid #ddd', padding: '12px', margin: '10px 0', borderRadius: '8px', cursor: 'pointer' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ fontSize: '11px', color: '#6b63d4', fontWeight: 'bold' }}>📖 LITURGIE DU JOUR</p>
+          <p style={{ fontSize: '11px', color: '#6b63d4', fontWeight: 'bold' }}>📖 {t.liturgie}</p>
           <span style={{ color: '#6b63d4', fontSize: '16px' }}>{liturgieOuverte ? '▲' : '▼'}</span>
         </div>
-        {chargement && <p style={{ color: '#999' }}>Chargement...</p>}
+        {chargement && <p style={{ color: '#999' }}>{t.chargement}</p>}
         {!chargement && liturgie && (
           <>
             <p style={{ fontWeight: '600', marginTop: '6px' }}>{liturgie.ref}</p>
@@ -123,21 +123,19 @@ export default function Accueil({ entrees }) {
           </p>
         )}
         {!chargement && !liturgie && (
-          <p style={{ color: '#999' }}>Lecture non disponible pour aujourd'hui.</p>
+          <p style={{ color: '#999' }}>{t.lectureNonDispo}</p>
         )}
       </div>
 
       <div style={{ border: '1px solid #ddd', padding: '12px', margin: '10px 0', borderRadius: '8px' }}>
-        <p style={{ fontSize: '11px', color: '#999', fontWeight: 'bold' }}>COMMENT TU TE SENS ?</p>
+        <p style={{ fontSize: '11px', color: '#999', fontWeight: 'bold' }}>{t.comment}</p>
         <div style={{ display: 'flex', gap: '10px' }}>
-          {[['😄', 'Bien'], ['😐', 'Neutre'], ['😞', 'Difficile']].map(([emoji, label]) => (
+          {[['😄', t.bien], ['😐', t.neutre], ['😞', t.difficile]].map(([emoji, label]) => (
             <button
               key={label}
               onClick={() => setMood(label)}
               style={{
-                padding: '8px 16px',
-                borderRadius: '20px',
-                border: '1px solid #ddd',
+                padding: '8px 16px', borderRadius: '20px', border: '1px solid #ddd',
                 background: mood === label ? '#f0eefc' : 'white',
                 color: mood === label ? '#6b63d4' : '#666',
                 cursor: 'pointer'
@@ -151,21 +149,21 @@ export default function Accueil({ entrees }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', margin: '10px 0' }}>
         <div style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '8px' }}>
-          <p style={{ fontSize: '11px', color: '#999' }}>🔥 STREAK</p>
+          <p style={{ fontSize: '11px', color: '#999' }}>🔥 {t.streak}</p>
           <p style={{ fontSize: '28px', fontWeight: 'bold' }}>{calculerStreak()}</p>
-          <p style={{ fontSize: '11px', color: '#999' }}>jours consécutifs</p>
+          <p style={{ fontSize: '11px', color: '#999' }}>{t.joursConsecutifs}</p>
         </div>
         <div style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '8px' }}>
-          <p style={{ fontSize: '11px', color: '#999' }}>📝 MOTS ÉCRITS</p>
+          <p style={{ fontSize: '11px', color: '#999' }}>📝 {t.motsEcrits}</p>
           <p style={{ fontSize: '28px', fontWeight: 'bold' }}>{totalMots}</p>
-          <p style={{ fontSize: '11px', color: '#999' }}>depuis le début</p>
+          <p style={{ fontSize: '11px', color: '#999' }}>{t.depuisDebut}</p>
         </div>
       </div>
 
       <div style={{ margin: '10px 0' }}>
-        <p style={{ fontSize: '11px', color: '#999', fontWeight: 'bold', marginBottom: '8px' }}>ASSISTANT IA</p>
+        <p style={{ fontSize: '11px', color: '#999', fontWeight: 'bold', marginBottom: '8px' }}>{t.assistantIA}</p>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-          {[['📝', 'Résumé', 'resume'], ['🙏', 'Prière', 'priere'], ['🧭', 'Guidance', 'guidance']].map(([icon, label, type]) => (
+          {[['📝', t.resume, 'resume'], ['🙏', t.priere, 'priere'], ['🧭', t.guidance, 'guidance']].map(([icon, label, type]) => (
             <button
               key={type}
               onClick={() => appellerAssistant(type)}
@@ -184,7 +182,7 @@ export default function Accueil({ entrees }) {
         </div>
 
         {assistantChargement && (
-          <p style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>✨ Génération en cours...</p>
+          <p style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>{t.generationEnCours}</p>
         )}
 
         {assistantResultat && !assistantChargement && (
@@ -193,7 +191,7 @@ export default function Accueil({ entrees }) {
             borderRadius: '12px', padding: '14px', marginTop: '4px'
           }}>
             <p style={{ fontSize: '11px', color: '#6b63d4', fontWeight: 'bold', marginBottom: '8px' }}>
-              {assistantType === 'resume' ? '📝 RÉSUMÉ' : assistantType === 'priere' ? '🙏 PRIÈRE' : '🧭 GUIDANCE'}
+              {assistantType === 'resume' ? `📝 ${t.resume.toUpperCase()}` : assistantType === 'priere' ? `🙏 ${t.priere.toUpperCase()}` : `🧭 ${t.guidance.toUpperCase()}`}
             </p>
             <p style={{ fontSize: '13px', color: '#4a4460', lineHeight: '1.8', fontStyle: 'italic' }}>
               {assistantResultat}
@@ -201,7 +199,6 @@ export default function Accueil({ entrees }) {
           </div>
         )}
       </div>
-
     </div>
   )
 }

@@ -3,6 +3,7 @@ import Accueil from './components/Accueil'
 import Ecrire from './components/Ecrire'
 import Entrees from './components/Entrees'
 import Parole from './components/ParoleAuto'
+import { traductions } from './i18n'
 
 
 export default function App() {
@@ -44,7 +45,7 @@ const supprimerEntree = (id) => {
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole />}
       </div>
-
+      const t = traductions[langue] || traductions.fr
       <nav className="nav-bar">
         <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
         🏠<span>Accueil</span>
