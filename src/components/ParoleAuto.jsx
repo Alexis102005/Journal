@@ -140,6 +140,11 @@ export default function ParoleAuto({ langue,isAdmin }) {
         <div>
           <h2>{langue === 'en' ? 'Word of the Day' : 'Parole du jour'}</h2>
           <p style={{ fontSize: '12px', color: '#a09890' }}>{dateAffichee}</p>
+          {langue === 'en' && (
+  <p style={{ fontSize: '11px', color: '#999', fontStyle: 'italic', marginTop: '4px' }}>
+    * Liturgical texts are currently available in French only.
+  </p>
+)}
         </div>
         {isAdmin && mode === 'voir' && (
   <button onClick={() => setMode('auth')} style={{ background: '#f0eefc', color: '#6b63d4', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
