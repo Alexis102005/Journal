@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { traductions } from '../i18n'
 
 export default function Accueil({ entrees }) {
   const [liturgie, setLiturgie] = useState(null)
@@ -8,7 +9,7 @@ export default function Accueil({ entrees }) {
   const [assistantResultat, setAssistantResultat] = useState('')
   const [assistantType, setAssistantType] = useState('')
   const [assistantChargement, setAssistantChargement] = useState(false)
-
+  const t = traductions[langue] || traductions.fr
   const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   })

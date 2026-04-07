@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { db } from '../firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
-const MOT_DE_PASSE_ADMIN = 'alexis2026'
 
 function LectureCard({ lecture, index }) {
   const [ouverte, setOuverte] = useState(false)
@@ -70,15 +69,20 @@ export default function ParoleAuto() {
     charger()
   }, [today])
 
-  const verifierMdp = () => {
-    if (mdp === MOT_DE_PASSE_ADMIN) {
-      setAdminOk(true)
-      setMode('editer')
-    } else {
-      alert('Mot de passe incorrect')
-    }
+  const verifierMdp = async () => {
+  const res = await fetch('/api/admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mdp })
+  })
+  const data = await res.json()
+  if (data.ok) {
+    setAdminOk(true)
+    setMode('editer')
+  } else {
+    alert('Mot de passe incorrect')
   }
-
+}
   const genererResumes = async () => {
     setGenerationEnCours(true)
     try {
