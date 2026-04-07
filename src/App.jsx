@@ -66,7 +66,7 @@ const supprimerEntree = (id) => {
         {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} />}
         {ecran === 'ecrire'   && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
-        {ecran === 'parole' && <Parole />}
+        {ecran === 'parole' && <Parole langue={langue} />}
       </div>
 
       <nav className="nav-bar">

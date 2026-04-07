@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { db } from '../firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
-
 function LectureCard({ lecture, index }) {
   const [ouverte, setOuverte] = useState(false)
 
@@ -40,7 +39,7 @@ function LectureCard({ lecture, index }) {
   )
 }
 
-export default function ParoleAuto() {
+export default function ParoleAuto({ langue }) {
   const [parole, setParole] = useState(null)
   const [chargement, setChargement] = useState(true)
   const [generationEnCours, setGenerationEnCours] = useState(false)
@@ -51,7 +50,7 @@ export default function ParoleAuto() {
   const [source, setSource] = useState('')
 
   const today = new Date().toISOString().split('T')[0]
-  const dateAffichee = new Date().toLocaleDateString('fr-FR', {
+  const dateAffichee = new Date().toLocaleDateString(langue === 'en' ? 'en-GB' : 'fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   })
 
@@ -70,27 +69,26 @@ export default function ParoleAuto() {
   }, [today])
 
   const verifierMdp = async () => {
-  const res = await fetch('/api/admin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mdp })
-  })
-  const data = await res.json()
-  if (data.ok) {
-    setAdminOk(true)
-    setMode('editer')
-  } else {
-    alert('Mot de passe incorrect')
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mdp })
+    })
+    const data = await res.json()
+    if (data.ok) {
+      setAdminOk(true)
+      setMode('editer')
+    } else {
+      alert('Mot de passe incorrect')
+    }
   }
-}
+
   const genererResumes = async () => {
     setGenerationEnCours(true)
     try {
-      const res = await fetch('/api/liturgie')
+      const res = await fetch(`/api/liturgie?lang=${langue || 'fr'}`)
       const data = await res.json()
       const lecturesBrutes = data.messes?.[0]?.lectures || []
-      console.log('Lectures brutes:', lecturesBrutes)
-      console.log('Data complète:', JSON.stringify(data))
 
       const lectures = lecturesBrutes
         .map(l => ({
@@ -99,6 +97,12 @@ export default function ParoleAuto() {
           texte: l.contenu?.replace(/<[^>]*>/g, '') || ''
         }))
         .filter(l => l.texte.length > 0)
+
+      if (lectures.length === 0) {
+        alert('Aucune lecture disponible pour aujourd\'hui.')
+        setGenerationEnCours(false)
+        return
+      }
 
       const response = await fetch('/api/resumeLecture', {
         method: 'POST',
@@ -134,7 +138,7 @@ export default function ParoleAuto() {
     <div className="ecran">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
-          <h2>Parole du jour</h2>
+          <h2>{langue === 'en' ? 'Word of the Day' : 'Parole du jour'}</h2>
           <p style={{ fontSize: '12px', color: '#a09890' }}>{dateAffichee}</p>
         </div>
         {mode === 'voir' && (
@@ -144,16 +148,16 @@ export default function ParoleAuto() {
         )}
         {mode !== 'voir' && (
           <button onClick={() => { setMode('voir'); setAdminOk(false); setMdp('') }} style={{ background: '#fee', color: '#a05050', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
-            ✕ Annuler
+            ✕ {langue === 'en' ? 'Cancel' : 'Annuler'}
           </button>
         )}
       </div>
 
       {mode === 'auth' && (
         <div className="card">
-          <p className="section-label">MOT DE PASSE ADMIN</p>
-          <input className="input-titre" type="password" placeholder="Mot de passe..." value={mdp} onChange={e => setMdp(e.target.value)} onKeyDown={e => e.key === 'Enter' && verifierMdp()} />
-          <button className="btn-save" onClick={verifierMdp}>Confirmer</button>
+          <p className="section-label">{langue === 'en' ? 'ADMIN PASSWORD' : 'MOT DE PASSE ADMIN'}</p>
+          <input className="input-titre" type="password" placeholder={langue === 'en' ? 'Password...' : 'Mot de passe...'} value={mdp} onChange={e => setMdp(e.target.value)} onKeyDown={e => e.key === 'Enter' && verifierMdp()} />
+          <button className="btn-save" onClick={verifierMdp}>{langue === 'en' ? 'Confirm' : 'Confirmer'}</button>
         </div>
       )}
 
@@ -161,22 +165,22 @@ export default function ParoleAuto() {
         <div>
           <button className="btn-save" onClick={genererResumes} disabled={generationEnCours}
             style={{ marginBottom: '16px', background: generationEnCours ? '#b0a8f0' : '#6b63d4' }}>
-            {generationEnCours ? '⏳ Génération en cours...' : '✨ Générer les résumés avec l\'IA'}
+            {generationEnCours ? '⏳ ...' : '✨ ' + (langue === 'en' ? 'Generate with AI' : 'Générer les résumés avec l\'IA')}
           </button>
           <div className="card" style={{ marginBottom: '12px' }}>
-            <p className="section-label" style={{ color: '#6b63d4' }}>✦ TA RÉFLEXION PERSONNELLE</p>
-            <textarea className="textarea-contenu" rows={5} placeholder="Ton résumé de l'homélie ou ta réflexion personnelle..." value={reflexion} onChange={e => setReflexion(e.target.value)} />
-            <input className="input-titre" placeholder="Source (ex: Père Francis Goossens)" value={source} onChange={e => setSource(e.target.value)} style={{ marginTop: '8px' }} />
+            <p className="section-label" style={{ color: '#6b63d4' }}>✦ {langue === 'en' ? 'YOUR PERSONAL REFLECTION' : 'TA RÉFLEXION PERSONNELLE'}</p>
+            <textarea className="textarea-contenu" rows={5} placeholder={langue === 'en' ? 'Your reflection...' : 'Ton résumé de l\'homélie...'} value={reflexion} onChange={e => setReflexion(e.target.value)} />
+            <input className="input-titre" placeholder={langue === 'en' ? 'Source (e.g. Fr. Francis)' : 'Source (ex: Père Francis Goossens)'} value={source} onChange={e => setSource(e.target.value)} style={{ marginTop: '8px' }} />
           </div>
-          <button className="btn-save" onClick={sauvegarderReflexion}>Sauvegarder</button>
+          <button className="btn-save" onClick={sauvegarderReflexion}>{langue === 'en' ? 'Save' : 'Sauvegarder'}</button>
         </div>
       )}
 
       {mode === 'voir' && !parole && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: '#b0a89c' }}>
           <p style={{ fontSize: '32px', marginBottom: '12px' }}>📖</p>
-          <p style={{ fontStyle: 'italic' }}>Aucune réflexion pour aujourd'hui.</p>
-          <p style={{ fontSize: '13px', marginTop: '8px' }}>Appuie sur Admin pour générer.</p>
+          <p style={{ fontStyle: 'italic' }}>{langue === 'en' ? 'No reflection for today.' : 'Aucune réflexion pour aujourd\'hui.'}</p>
+          <p style={{ fontSize: '13px', marginTop: '8px' }}>{langue === 'en' ? 'Tap Admin to generate.' : 'Appuie sur Admin pour générer.'}</p>
         </div>
       )}
 
@@ -185,10 +189,9 @@ export default function ParoleAuto() {
           {parole.lectures?.map((lecture, i) => (
             <LectureCard key={i} lecture={lecture} index={i} />
           ))}
-
           {parole.synthese && (
             <div className="card" style={{ marginBottom: '12px', background: '#f0eefc', border: '1px solid #dcd8f5' }}>
-              <p className="section-label" style={{ color: '#6b63d4' }}>✨ SYNTHÈSE DU JOUR</p>
+              <p className="section-label" style={{ color: '#6b63d4' }}>✨ {langue === 'en' ? 'SYNTHESIS' : 'SYNTHÈSE DU JOUR'}</p>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0' }}>
                 {parole.synthese.mots_cles?.map(mot => (
                   <span key={mot} style={{ background: 'white', color: '#6b63d4', padding: '3px 10px', borderRadius: '20px', fontSize: '12px' }}>{mot}</span>
@@ -199,17 +202,15 @@ export default function ParoleAuto() {
               </p>
             </div>
           )}
-
           {parole.reflexion && (
             <div style={{ borderLeft: '3px solid #6b63d4', paddingLeft: '14px', marginBottom: '12px' }}>
-              <p className="section-label" style={{ color: '#6b63d4' }}>✦ RÉFLEXION</p>
+              <p className="section-label" style={{ color: '#6b63d4' }}>✦ {langue === 'en' ? 'REFLECTION' : 'RÉFLEXION'}</p>
               <p style={{ fontSize: '14px', color: '#1e1b18', lineHeight: '1.8' }}>{parole.reflexion}</p>
               {parole.source && <p style={{ fontSize: '11px', color: '#b0a89c', marginTop: '6px' }}>— {parole.source}</p>}
             </div>
           )}
         </div>
       )}
-
     </div>
   )
 }
