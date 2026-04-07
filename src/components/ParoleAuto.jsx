@@ -39,7 +39,7 @@ function LectureCard({ lecture, index }) {
   )
 }
 
-export default function ParoleAuto({ langue }) {
+export default function ParoleAuto({ langue,isAdmin }) {
   const [parole, setParole] = useState(null)
   const [chargement, setChargement] = useState(true)
   const [generationEnCours, setGenerationEnCours] = useState(false)
@@ -141,16 +141,16 @@ export default function ParoleAuto({ langue }) {
           <h2>{langue === 'en' ? 'Word of the Day' : 'Parole du jour'}</h2>
           <p style={{ fontSize: '12px', color: '#a09890' }}>{dateAffichee}</p>
         </div>
-        {mode === 'voir' && (
-          <button onClick={() => setMode('auth')} style={{ background: '#f0eefc', color: '#6b63d4', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
-            ✏️ Admin
-          </button>
-        )}
-        {mode !== 'voir' && (
-          <button onClick={() => { setMode('voir'); setAdminOk(false); setMdp('') }} style={{ background: '#fee', color: '#a05050', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
-            ✕ {langue === 'en' ? 'Cancel' : 'Annuler'}
-          </button>
-        )}
+        {isAdmin && mode === 'voir' && (
+  <button onClick={() => setMode('auth')} style={{ background: '#f0eefc', color: '#6b63d4', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
+    ✏️ Admin
+  </button>
+)}
+{isAdmin && mode !== 'voir' && (
+  <button onClick={() => { setMode('voir'); setAdminOk(false); setMdp('') }} style={{ background: '#fee', color: '#a05050', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
+    ✕ {langue === 'en' ? 'Cancel' : 'Annuler'}
+  </button>
+)}
       </div>
 
       {mode === 'auth' && (
