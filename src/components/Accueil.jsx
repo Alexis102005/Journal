@@ -55,31 +55,46 @@ export default function Accueil({ entrees }) {
   }, [])
 
   const appellerAssistant = async (type) => {
-    setAssistantType(type)
-    setAssistantChargement(true)
-    setAssistantResultat('')
-    try {
-      const res = await fetch('/api/liturgie')
-      const data = await res.json()
-      const lecturesBrutes = data.messes?.[0]?.lectures || []
-      const lectures = lecturesBrutes.map(l => ({
-        ref: l.ref || l.titre || '',
-        type: l.type || l.titre || '',
-        texte: l.contenu?.replace(/<[^>]*>/g, '') || ''
-      })).filter(l => l.texte.length > 0)
+  setAssistantType(type)
+  setAssistantChargement(true)
+  setAssistantResultat('')
+  try {
+    const res = await fetch('/api/liturgie')
+    const data = await res.json()
+    const lecturesBrutes = data.messes?.[0]?.lectures || []
+    const lectures = lecturesBrutes.map(l => ({
+      ref: l.ref || l.titre || '',
+      type: l.type || l.titre || '',
+      texte: l.contenu?.replace(/<[^>]*>/g, '') || ''
+    })).filter(l => l.texte.length > 0)
 
-      const response = await fetch('/api/assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, lectures, mood })
+    // Entrées de la semaine
+    const il7jours = new Date()
+    il7jours.setDate(il7jours.getDate() - 7)
+    const entreessemaine = entrees
+      .filter(e => new Date(e.id) >= il7jours)
+      .map(e => `[${new Date(e.id).toLocaleDateString('fr-FR')}]\n${e.contenu}`)
+      .join('\n\n---\n\n')
+
+    const response = await fetch('/api/assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        type, 
+        lectures, 
+        mood,
+        entreeSemaine: entreesemaine,
+        // Pour résumé : on passe les entrées comme mood (réutilise le champ)
+        ...(type === 'resume' && { mood: entreesemaine || 'Aucune entrée cette semaine.' })
       })
-      const result = await response.json()
-      setAssistantResultat(result.texte)
-    } catch(e) {
-      setAssistantResultat('Erreur, réessaie.')
-    }
-    setAssistantChargement(false)
+    })
+    const result = await response.json()
+    setAssistantResultat(result.texte)
+  } catch(e) {
+    setAssistantResultat('Erreur, réessaie.')
   }
+  setAssistantChargement(false)
+}
 
   return (
     <div>

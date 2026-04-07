@@ -3,20 +3,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { type, lectures, mood } = req.body
-
+  const { type, lectures, mood, entreeSemaine } = req.body
   const lecturesFormatees = lectures?.map(l =>
     `[${l.type || l.ref}]\n${l.texte?.slice(0, 1000)}`
   ).join('\n\n---\n\n') || 'Lectures non disponibles'
 
   const prompts = {
-    resume: `Tu es un accompagnateur spirituel catholique francophone. Tu t'exprimes UNIQUEMENT en français, avec une langue soignée et chaleureuse.
+   resume: `Tu es un accompagnateur spirituel catholique francophone. Tu t'exprimes UNIQUEMENT en français, avec une langue soignée et chaleureuse.
 
-Voici les lectures liturgiques du jour :
-${lecturesFormatees}
+Voici les entrées du journal de la personne cette semaine :
+ ${mood || 'Aucune entrée cette semaine.'}
 
-Écris une synthèse courte (3-4 phrases) qui relie toutes ces lectures comme si tu parlais à un ami. Parle au cœur, utilise "tu".
-Réponds en texte simple, sans JSON, sans markdown.`,
+    Fais un bilan spirituel et personnel de sa semaine en 4-5 phrases :
+    - Quels thèmes ou combats reviennent souvent ?
+    - Qu'est-ce qui a changé ou progressé ?
+    - Ce que Dieu semble dire à travers cette semaine
+    Parle directement à la personne avec "tu", de façon chaleureuse et honnête.
+    Réponds en texte simple, sans JSON, sans markdown.`,
 
     priere: `Tu es un accompagnateur spirituel catholique francophone. Tu t'exprimes UNIQUEMENT en français.
 
@@ -24,8 +27,9 @@ Voici les lectures liturgiques du jour :
 ${lecturesFormatees}
 
 La personne se sent : ${mood || 'neutre'} aujourd'hui.
+${entreeSemaine ? `Ce qu'elle a vécu cette semaine :\n${entreeSemaine}` : ''}
 
-Écris une courte prière (5-6 lignes) inspirée des lectures et adaptée à son état d'âme. La prière doit être simple, sincère, parlée à Dieu directement (utilise "Seigneur", "Père"...).
+Écris une courte prière (5-6 lignes) inspirée des lectures et de ce qu'elle a vécu. La prière doit être simple, sincère, parlée à Dieu directement (utilise "Seigneur", "Père"...).
 Réponds en texte simple, sans JSON, sans markdown.`,
 
     guidance: `Tu es un accompagnateur spirituel catholique francophone. Tu parles comme un père spirituel direct ET comme un frère en foi. Tu t'exprimes UNIQUEMENT en français, soigné, chaleureux et franc.
