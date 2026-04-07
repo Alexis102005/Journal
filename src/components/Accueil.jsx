@@ -38,7 +38,7 @@ export default function Accueil({ entrees, langue }) {
   const totalMots = entrees.reduce((acc, e) => acc + e.mots, 0)
 
   useEffect(() => {
-    fetch('/api/liturgie')
+    fetch(`/api/liturgie?lang=${langue}`)
       .then(res => res.json())
       .then(data => {
         const lectures = data.messes?.[0]?.lectures
@@ -62,7 +62,7 @@ export default function Accueil({ entrees, langue }) {
     setAssistantChargement(true)
     setAssistantResultat('')
     try {
-      const res = await fetch('/api/liturgie')
+      const res = await fetch(`/api/liturgie?lang=${langue}`)
       const data = await res.json()
       const lecturesBrutes = data.messes?.[0]?.lectures || []
       const lectures = lecturesBrutes.map(l => ({
@@ -78,7 +78,7 @@ export default function Accueil({ entrees, langue }) {
         .map(e => `[${new Date(e.id).toLocaleDateString('fr-FR')}]\n${e.contenu}`)
         .join('\n\n---\n\n')
 
-      const response = await fetch('/api/assistant', {
+      const response = await fetch(`/api/assistant?lang=${langue}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -86,6 +86,7 @@ export default function Accueil({ entrees, langue }) {
           lectures,
           mood,
           entreeSemaine,
+          langue,
           ...(type === 'resume' && { mood: entreeSemaine || 'Aucune entrée cette semaine.' })
         })
       })
