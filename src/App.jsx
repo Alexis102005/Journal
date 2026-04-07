@@ -11,7 +11,9 @@ export default function App() {
    const [langue, setLangue] = useState(() => 
   localStorage.getItem('langue') || 'fr'
   )
-
+   const [isAdmin, setIsAdmin] = useState(
+  window.location.hash === '#admin'
+)
   const changerLangue = (l) => {
   setLangue(l)
   localStorage.setItem('langue', l)
@@ -66,7 +68,7 @@ const supprimerEntree = (id) => {
         {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} />}
         {ecran === 'ecrire'   && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
-        {ecran === 'parole' && <Parole langue={langue} />}
+        {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
       </div>
 
       <nav className="nav-bar">
