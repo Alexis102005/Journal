@@ -39,47 +39,51 @@ const supprimerEntree = (id) => {
 
   return (
     <div className="app">
+
+      {/* Sélecteur de langue flottant */}
+      <div style={{ 
+        position: 'fixed', top: '12px', right: '12px', 
+        display: 'flex', gap: '4px', zIndex: 100 
+      }}>
+        {['fr', 'en'].map(l => (
+          <button
+            key={l}
+            onClick={() => changerLangue(l)}
+            style={{
+              padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
+              border: '1px solid #ddd',
+              background: langue === l ? '#6b63d4' : 'white',
+              color: langue === l ? 'white' : '#666',
+              cursor: 'pointer'
+            }}
+          >
+            {l === 'fr' ? '🇫🇷' : '🇬🇧'}
+          </button>
+        ))}
+      </div>
+
       <div className="contenu">
         {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} />}
         {ecran === 'ecrire'   && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole />}
       </div>
-      const t = traductions[langue] || traductions.fr
+
       <nav className="nav-bar">
         <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
-        🏠<span>Accueil</span>
-          </button>
+          🏠<span>Accueil</span>
+        </button>
         <button onClick={() => setEcran('parole')} className={ecran === 'parole' ? 'actif' : ''}>
-         📖<span>Parole</span>
+          📖<span>Parole</span>
         </button>
         <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
-        ✏️<span>Écrire</span>
+          ✏️<span>Écrire</span>
         </button>
         <button onClick={() => setEcran('entrees')} className={ecran === 'entrees' ? 'actif' : ''}>
-        📓 <span>Entrées</span>
+          📓<span>Entrées</span>
         </button>
-        <div style={{ 
-  position: 'fixed', top: '12px', right: '16px', 
-  display: 'flex', gap: '6px', zIndex: 100 
-}}>
-  {['fr', 'en'].map(l => (
-    <button
-      key={l}
-      onClick={() => changerLangue(l)}
-      style={{
-        padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
-        border: '1px solid #ddd',
-        background: langue === l ? '#6b63d4' : 'white',
-        color: langue === l ? 'white' : '#666',
-        cursor: 'pointer'
-      }}
-    >
-      {l === 'fr' ? '🇫🇷' : '🇬🇧'}
-    </button>
-  ))}
-</div>
       </nav>
+
     </div>
   )
 }
