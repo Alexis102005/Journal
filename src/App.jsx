@@ -3,6 +3,7 @@ import Accueil from './components/Accueil'
 import Ecrire from './components/Ecrire'
 import Entrees from './components/Entrees'
 import Parole from './components/ParoleAuto'
+import WordOfDay from './components/WordOfDay'
 import { traductions } from './i18n'
 
 export default function App() {
@@ -81,6 +82,7 @@ export default function App() {
         {ecran === 'ecrire' && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
+        {ecran === 'wordOfDay' && <WordOfDay langue={langue} isAdmin={isAdmin} />}
       </div>
 
       <nav className="nav-bar">
@@ -89,6 +91,9 @@ export default function App() {
         </button>
         <button onClick={() => setEcran('parole')} className={ecran === 'parole' ? 'actif' : ''}>
           📖<span>{t.parole}</span>
+        </button>
+        <button onClick={() => setEcran('wordOfDay')} className={ecran === 'wordOfDay' ? 'actif' : ''}>
+          ✨<span>{langue === 'en' ? 'Word' : 'Parole'}</span>
         </button>
         <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
           ✏️<span>{t.ecrire}</span>
