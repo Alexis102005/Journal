@@ -4,6 +4,7 @@ import Ecrire from './components/Ecrire'
 import Entrees from './components/Entrees'
 import Parole from './components/ParoleAuto'
 import { traductions } from './i18n'
+import ConseilsIA from './components/ConseilsIA'
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -50,6 +51,15 @@ export default function App() {
   const ajouterEntree = (entree) => {
     setEntrees([entree, ...entrees])
   }
+  
+  const [theme, setTheme] = useState(() =>
+  localStorage.getItem('theme') || 'light'
+  )
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : '')
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   return (
     <div className="app">
@@ -77,26 +87,30 @@ export default function App() {
       </div>
 
       <div className="contenu">
-        {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} />}
+        {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} theme={theme} setTheme={setTheme} />}
         {ecran === 'ecrire' && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
+        {ecran === 'conseils' && <ConseilsIA entrees={entrees} langue={langue} />}
       </div>
 
       <nav className="nav-bar">
-        <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
-          🏠<span>{t.accueil}</span>
-        </button>
-        <button onClick={() => setEcran('parole')} className={ecran === 'parole' ? 'actif' : ''}>
-          📖<span>{t.parole}</span>
-        </button>
-        <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
-          ✏️<span>{t.ecrire}</span>
-        </button>
-        <button onClick={() => setEcran('entrees')} className={ecran === 'entrees' ? 'actif' : ''}>
-          📓<span>{t.entrees}</span>
-        </button>
-      </nav>
+  <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
+    🏠<span>{t.accueil}</span>
+  </button>
+  <button onClick={() => setEcran('parole')} className={ecran === 'parole' ? 'actif' : ''}>
+    📖<span>{t.parole}</span>
+  </button>
+  <button onClick={() => setEcran('conseils')} className={`nav-fab ${ecran === 'conseils' ? 'actif' : ''}`}>
+    ✨
+  </button>
+  <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
+    ✏️<span>{t.ecrire}</span>
+  </button>
+  <button onClick={() => setEcran('entrees')} className={ecran === 'entrees' ? 'actif' : ''}>
+    📓<span>{t.entrees}</span>
+  </button>
+</nav>
 
     </div>
   )
