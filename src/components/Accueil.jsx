@@ -55,7 +55,7 @@ export default function Accueil({ entrees, langue }) {
         setLiturgie(null)
         setChargement(false)
       })
-  }, [])
+  }, [langue])
 
   const appellerAssistant = async (type) => {
     setAssistantType(type)
@@ -78,15 +78,11 @@ export default function Accueil({ entrees, langue }) {
         .map(e => `[${new Date(e.id).toLocaleDateString('fr-FR')}]\n${e.contenu}`)
         .join('\n\n---\n\n')
 
-      const response = await fetch(`/api/assistant?lang=${langue}`, {
+      const response = await fetch('/api/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type,
-          lectures,
-          mood,
-          entreeSemaine,
-          langue,
+          type, lectures, mood, entreeSemaine, langue,
           ...(type === 'resume' && { mood: entreeSemaine || 'Aucune entrée cette semaine.' })
         })
       })
@@ -101,46 +97,55 @@ export default function Accueil({ entrees, langue }) {
   return (
     <div>
       <h2>{t.bonjour} 🌿</h2>
-      <p>{today}</p>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{today}</p>
 
+      {/* Liturgie */}
       <div
         onClick={() => setLiturgieouverte(!liturgieOuverte)}
-        style={{ border: '1px solid #ddd', padding: '12px', margin: '10px 0', borderRadius: '8px', cursor: 'pointer' }}
+        className="card"
+        style={{ cursor: 'pointer' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ fontSize: '11px', color: '#6b63d4', fontWeight: 'bold' }}>📖 {t.liturgie}</p>
-          <span style={{ color: '#6b63d4', fontSize: '16px' }}>{liturgieOuverte ? '▲' : '▼'}</span>
+          <p style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.08em' }}>
+            📖 {t.liturgie}
+          </p>
+          <span style={{ color: 'var(--accent)', fontSize: '14px' }}>{liturgieOuverte ? '▲' : '▼'}</span>
         </div>
-        {chargement && <p style={{ color: '#999' }}>{t.chargement}</p>}
+        {chargement && <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>{t.chargement}</p>}
         {!chargement && liturgie && (
           <>
-            <p style={{ fontWeight: '600', marginTop: '6px' }}>{liturgie.ref}</p>
-            <p style={{ fontStyle: 'italic', color: '#666', fontSize: '13px', marginTop: '4px' }}>{liturgie.intro}</p>
+            <p style={{ fontWeight: '600', marginTop: '8px', color: 'var(--text-primary)', fontSize: '15px' }}>
+              {liturgie.ref}
+            </p>
+            <p style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', lineHeight: '1.6' }}>
+              {liturgie.intro}
+            </p>
           </>
         )}
         {!chargement && liturgie && liturgieOuverte && (
-          <p style={{ fontSize: '13px', color: '#444', lineHeight: '1.8', marginTop: '12px', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.9', marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
             {liturgie.texte}
           </p>
         )}
         {!chargement && !liturgie && (
-          <p style={{ color: '#999' }}>{t.lectureNonDispo}</p>
+          <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>{t.lectureNonDispo}</p>
+        )}
+        {langue === 'en' && !chargement && (
+          <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '6px' }}>
+            * Liturgical texts are currently available in French only.
+          </p>
         )}
       </div>
 
-      <div style={{ border: '1px solid #ddd', padding: '12px', margin: '10px 0', borderRadius: '8px' }}>
-        <p style={{ fontSize: '11px', color: '#999', fontWeight: 'bold' }}>{t.comment}</p>
-        <div style={{ display: 'flex', gap: '10px' }}>
+      {/* Humeur */}
+      <div className="card">
+        <p className="section-label">{t.comment}</p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {[['😄', t.bien], ['😐', t.neutre], ['😞', t.difficile]].map(([emoji, label]) => (
             <button
               key={label}
               onClick={() => setMood(label)}
-              style={{
-                padding: '8px 16px', borderRadius: '20px', border: '1px solid #ddd',
-                background: mood === label ? '#f0eefc' : 'white',
-                color: mood === label ? '#6b63d4' : '#666',
-                cursor: 'pointer'
-              }}
+              className={`chip ${mood === label ? 'actif' : ''}`}
             >
               {emoji} {label}
             </button>
@@ -148,53 +153,61 @@ export default function Accueil({ entrees, langue }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', margin: '10px 0' }}>
-        <div style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '8px' }}>
-          <p style={{ fontSize: '11px', color: '#999' }}>🔥 {t.streak}</p>
-          <p style={{ fontSize: '28px', fontWeight: 'bold' }}>{calculerStreak()}</p>
-          <p style={{ fontSize: '11px', color: '#999' }}>{t.joursConsecutifs}</p>
+      {/* Stats */}
+      <div className="stats-grid">
+        <div className="stat-card streak">
+          <p className="stat-label">🔥 {t.streak}</p>
+          <p className="stat-val">{calculerStreak()}</p>
+          <p className="stat-sub">{t.joursConsecutifs}</p>
         </div>
-        <div style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '8px' }}>
-          <p style={{ fontSize: '11px', color: '#999' }}>📝 {t.motsEcrits}</p>
-          <p style={{ fontSize: '28px', fontWeight: 'bold' }}>{totalMots}</p>
-          <p style={{ fontSize: '11px', color: '#999' }}>{t.depuisDebut}</p>
+        <div className="stat-card mots">
+          <p className="stat-label">📝 {t.motsEcrits}</p>
+          <p className="stat-val">{totalMots}</p>
+          <p className="stat-sub">{t.depuisDebut}</p>
         </div>
       </div>
 
-      <div style={{ margin: '10px 0' }}>
-        <p style={{ fontSize: '11px', color: '#999', fontWeight: 'bold', marginBottom: '8px' }}>{t.assistantIA}</p>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+      {/* Assistant IA — gardé minimal, les vraies fonctions sont dans Conseils IA */}
+      <div className="card">
+        <p className="section-label">{t.assistantIA}</p>
+        <div style={{ display: 'flex', gap: '8px' }}>
           {[['📝', t.resume, 'resume'], ['🙏', t.priere, 'priere'], ['🧭', t.guidance, 'guidance']].map(([icon, label, type]) => (
             <button
               key={type}
               onClick={() => appellerAssistant(type)}
               disabled={assistantChargement}
               style={{
-                flex: 1, padding: '10px', borderRadius: '12px',
-                border: assistantType === type ? '2px solid #6b63d4' : '1px solid #ddd',
-                background: assistantType === type ? '#f0eefc' : 'white',
-                color: '#6b63d4', cursor: 'pointer',
-                opacity: assistantChargement ? 0.6 : 1
+                flex: 1, padding: '12px 6px', borderRadius: '14px',
+                border: `1px solid ${assistantType === type ? 'var(--accent)' : 'var(--border)'}`,
+                background: assistantType === type ? 'var(--accent-light)' : 'var(--bg-card)',
+                color: 'var(--accent)', cursor: 'pointer',
+                opacity: assistantChargement ? 0.6 : 1,
+                fontSize: '12px', fontWeight: '600',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                boxShadow: 'var(--shadow-card)', transition: 'all 0.15s'
               }}
             >
-              {icon}<br />{label}
+              <span style={{ fontSize: '20px' }}>{icon}</span>
+              {label}
             </button>
           ))}
         </div>
 
         {assistantChargement && (
-          <p style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>{t.generationEnCours}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontStyle: 'italic', marginTop: '12px' }}>
+            {t.generationEnCours}
+          </p>
         )}
 
         {assistantResultat && !assistantChargement && (
           <div style={{
-            background: '#f0eefc', border: '1px solid #dcd8f5',
-            borderRadius: '12px', padding: '14px', marginTop: '4px'
+            background: 'var(--accent-light)', border: '1px solid var(--accent)',
+            borderRadius: '14px', padding: '14px', marginTop: '12px'
           }}>
-            <p style={{ fontSize: '11px', color: '#6b63d4', fontWeight: 'bold', marginBottom: '8px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', marginBottom: '8px', letterSpacing: '0.08em' }}>
               {assistantType === 'resume' ? `📝 ${t.resume.toUpperCase()}` : assistantType === 'priere' ? `🙏 ${t.priere.toUpperCase()}` : `🧭 ${t.guidance.toUpperCase()}`}
             </p>
-            <p style={{ fontSize: '13px', color: '#4a4460', lineHeight: '1.8', fontStyle: 'italic' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8', fontStyle: 'italic' }}>
               {assistantResultat}
             </p>
           </div>
