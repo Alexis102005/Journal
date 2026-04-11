@@ -64,27 +64,39 @@ export default function App() {
   return (
     <div className="app">
 
-      {/* Sélecteur de langue flottant */}
-      <div style={{
-        position: 'fixed', top: '12px', right: '12px',
-        display: 'flex', gap: '4px', zIndex: 100
-      }}>
-        {['fr', 'en'].map(l => (
-          <button
-            key={l}
-            onClick={() => changerLangue(l)}
-            style={{
-              padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
-              border: '1px solid #ddd',
-              background: langue === l ? '#6b63d4' : 'white',
-              color: langue === l ? 'white' : '#666',
-              cursor: 'pointer'
-            }}
-          >
-            {l === 'fr' ? '🇫🇷' : '🇬🇧'}
-          </button>
-        ))}
-      </div>
+      {/* Sélecteur langue + thème */}
+<div style={{
+  position: 'fixed', top: '12px', right: '12px',
+  display: 'flex', gap: '4px', zIndex: 100
+}}>
+  {['fr', 'en'].map(l => (
+    <button
+      key={l}
+      onClick={() => changerLangue(l)}
+      style={{
+        padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
+        border: '1px solid var(--border)',
+        background: langue === l ? 'var(--accent)' : 'var(--bg-card)',
+        color: langue === l ? 'white' : 'var(--text-muted)',
+        cursor: 'pointer'
+      }}
+    >
+      {l === 'fr' ? '🇫🇷' : '🇬🇧'}
+    </button>
+  ))}
+  <button
+    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+    style={{
+      padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
+      border: '1px solid var(--border)',
+      background: 'var(--bg-card)',
+      color: 'var(--text-muted)',
+      cursor: 'pointer'
+    }}
+  >
+    {theme === 'dark' ? '☀️' : '🌙'}
+  </button>
+</div>
 
       <div className="contenu">
         {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} theme={theme} setTheme={setTheme} />}
