@@ -55,37 +55,36 @@ const arreterEnregistrement = () => {
   setEnregistrement(false)
 }
 
-const transcrire = async (blob) => {
+const transcrire = async () => {
+  if (!audioBlob) return
   setTranscriptionEnCours(true)
-  const formData = new FormData()
-  formData.append('file', blob, 'audio.webm')
-  formData.append('model', 'whisper-large-v3')
-  formData.append('language', 'fr')
-
   try {
-    const res = await fetch('/api/transcrire', {
-      method: 'POST',
-      body: formData
-    })
-    const data = await res.json()
-    setTranscription(data.text || '')
+    // Convertir en base64
+    const reader = new FileReader()
+    reader.readAsDataURL(audioBlob)
+    reader.onloadend = async () => {
+      const base64 = reader.result.split(',')[1]
+      const res = await fetch('/api/transcrire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          audio: base64, 
+          langue: langue === 'en' ? 'en' : 'fr' 
+        })
+      })
+      const data = await res.json()
+      if (data.text) {
+        setContenu(prev => prev ? prev + '\n' + data.text : data.text)
+        setAudioBlob(null)
+        setAudioUrl(null)
+      }
+      setTranscriptionEnCours(false)
+    }
   } catch(e) {
     console.error(e)
+    setTranscriptionEnCours(false)
   }
-  setTranscriptionEnCours(false)
 }
-
-const validerTranscription = () => {
-  setContenu(prev => prev + '\n' + transcription)
-  setTranscription('')
-  setAudioBlob(null)
-  setAudioUrl(null)
-}
-
-const garderAudio = () => {
-  setTranscription('')
-}
-
   return (
     <div className="ecran">
       <h2>Nouvelle entrée</h2>
