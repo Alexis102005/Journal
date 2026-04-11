@@ -100,7 +100,7 @@ export default function App() {
 
       <div className="contenu">
         {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} theme={theme} setTheme={setTheme} />}
-        {ecran === 'ecrire' && <Ecrire onSave={ajouterEntree} setEcran={setEcran} />}
+        {ecran === 'ecrire' && <Ecrire onSave={ajouterEntree} setEcran={setEcran} langue={langue} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
         {ecran === 'conseils' && <ConseilsIA entrees={entrees} langue={langue} />}
