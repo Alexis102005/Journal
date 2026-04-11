@@ -50,6 +50,16 @@ body {
   transition: background 0.3s, color 0.3s;
 }
 
+/* Aussi important — le html et root doivent avoir le même fond */
+html {
+  background: var(--bg);
+}
+
+#root {
+  background: var(--bg);
+  min-height: 100vh;
+}
+
 /* ===== LAYOUT ===== */
 .app {
   display: flex;
