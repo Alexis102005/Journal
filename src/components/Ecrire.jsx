@@ -93,12 +93,10 @@ export default function Ecrire({ onSave, setEcran, langue }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: '430px', height: '100vh',
-      background: 'var(--bg)', zIndex: 200,
-      display: 'flex', flexDirection: 'column'
-    }}>
+      <div style={{
+        display: 'flex', flexDirection: 'column',
+         minHeight: 'calc(100vh - 80px)'
+      }}>
       {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
