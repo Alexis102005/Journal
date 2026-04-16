@@ -5,6 +5,7 @@ import Entrees from './components/Entrees'
 import Parole from './components/ParoleAuto'
 import { traductions } from './i18n'
 import ConseilsIA from './components/ConseilsIA'
+import { Analytics } from "@vercel/analytics/next"
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -107,22 +108,24 @@ export default function App() {
       </div>
 
       <nav className="nav-bar">
-  <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
-    🏠<span>{t.accueil}</span>
-  </button>
-  <button onClick={() => setEcran('parole')} className={ecran === 'parole' ? 'actif' : ''}>
-    📖<span>{t.parole}</span>
-  </button>
-  <button onClick={() => setEcran('conseils')} className={`nav-fab ${ecran === 'conseils' ? 'actif' : ''}`}>
-    ✨
-  </button>
-  <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
-    ✏️<span>{t.ecrire}</span>
-  </button>
-  <button onClick={() => setEcran('entrees')} className={ecran === 'entrees' ? 'actif' : ''}>
-    📓<span>{t.entrees}</span>
-  </button>
-</nav>
+        <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
+          🏠<span>{t.accueil}</span>
+        </button>
+        <button onClick={() => setEcran('parole')} className={ecran === 'parole' ? 'actif' : ''}>
+          📖<span>{t.parole}</span>
+        </button>
+        <button onClick={() => setEcran('conseils')} className={`nav-fab ${ecran === 'conseils' ? 'actif' : ''}`}>
+          ✨
+        </button>
+        <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
+          ✏️<span>{t.ecrire}</span>
+        </button>
+        <button onClick={() => setEcran('entrees')} className={ecran === 'entrees' ? 'actif' : ''}>
+          📓<span>{t.entrees}</span>
+        </button>
+      </nav>
+
+      <Analytics /> 
 
     </div>
   )
