@@ -5,7 +5,6 @@ import Entrees from './components/Entrees'
 import Parole from './components/ParoleAuto'
 import { traductions } from './i18n'
 import ConseilsIA from './components/ConseilsIA'
-import { Analytics } from "@vercel/analytics/next"
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -100,7 +99,7 @@ export default function App() {
 </div>
 
       <div className="contenu">
-        {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} theme={theme} setTheme={setTheme} />}
+        {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} theme={theme} setTheme={setTheme} setEcran={setEcran} />}
         {ecran === 'ecrire' && <Ecrire onSave={ajouterEntree} setEcran={setEcran} langue={langue} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
@@ -124,8 +123,6 @@ export default function App() {
           📓<span>{t.entrees}</span>
         </button>
       </nav>
-
-      <Analytics /> 
 
     </div>
   )

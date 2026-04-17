@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import { traductions } from '../i18n'
 
-export default function Accueil({ entrees, langue }) {
+  export default function Accueil({ entrees, langue, theme, setTheme, setEcran }) {
   const [liturgie, setLiturgie] = useState(null)
   const [liturgieOuverte, setLiturgieouverte] = useState(false)
   const [chargement, setChargement] = useState(true)
-  const [mood, setMood] = useState('')
   const [assistantResultat, setAssistantResultat] = useState('')
   const [assistantType, setAssistantType] = useState('')
   const [assistantChargement, setAssistantChargement] = useState(false)
@@ -82,7 +81,7 @@ export default function Accueil({ entrees, langue }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type, lectures, mood, entreeSemaine, langue,
+          type, lectures, mood: '', entreeSemaine, langue,
           ...(type === 'resume' && { mood: entreeSemaine || 'Aucune entrée cette semaine.' })
         })
       })
@@ -99,59 +98,70 @@ export default function Accueil({ entrees, langue }) {
       <h2>{t.bonjour} 🌿</h2>
       <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{today}</p>
 
-      {/* Liturgie */}
-      <div
-        onClick={() => setLiturgieouverte(!liturgieOuverte)}
-        className="card"
-        style={{ cursor: 'pointer' }}
+      {/* Card verset du jour */}
+      <div 
+        onClick={() => setEcran('parole')}
+        style={{
+          background: 'var(--card-verse)',
+          borderRadius: '20px',
+          padding: '24px 22px',
+          marginBottom: '16px',
+          cursor: 'pointer'
+        }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.08em' }}>
-            📖 {t.liturgie}
-          </p>
-          <span style={{ color: 'var(--accent)', fontSize: '14px' }}>{liturgieOuverte ? '▲' : '▼'}</span>
-        </div>
-        {chargement && <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>{t.chargement}</p>}
-        {!chargement && liturgie && (
-          <>
-            <p style={{ fontWeight: '600', marginTop: '8px', color: 'var(--text-primary)', fontSize: '15px' }}>
-              {liturgie.ref}
-            </p>
-            <p style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', lineHeight: '1.6' }}>
-              {liturgie.intro}
-            </p>
-          </>
-        )}
-        {!chargement && liturgie && liturgieOuverte && (
-          <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.9', marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-            {liturgie.texte}
-          </p>
-        )}
-        {!chargement && !liturgie && (
-          <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>{t.lectureNonDispo}</p>
-        )}
-        {langue === 'en' && !chargement && (
-          <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '6px' }}>
-            * Liturgical texts are currently available in French only.
-          </p>
-        )}
+        <p style={{ 
+          fontSize: '11px', letterSpacing: '1.5px', 
+          textTransform: 'uppercase', color: 'var(--text-on-dark)', 
+          opacity: 0.7, margin: '0 0 12px' 
+        }}>
+          VERSET DU JOUR
+        </p>
+        <p style={{ 
+          fontSize: '16px', fontStyle: 'italic', 
+          color: 'var(--text-on-dark)', lineHeight: '1.7', 
+          margin: '0 0 14px', fontFamily: 'Georgia, serif' 
+        }}>
+          {chargement ? '...' : liturgie ? `"${liturgie.intro}"` : t.lectureNonDispo}
+        </p>
+        <p style={{ fontSize: '12px', color: 'var(--accent)', margin: 0 }}>
+          {liturgie?.ref} →
+        </p>
       </div>
 
-      {/* Humeur */}
-      <div className="card">
-        <p className="section-label">{t.comment}</p>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {[['😄', t.bien], ['😐', t.neutre], ['😞', t.difficile]].map(([emoji, label]) => (
-            <button
-              key={label}
-              onClick={() => setMood(label)}
-              className={`chip ${mood === label ? 'actif' : ''}`}
-            >
-              {emoji} {label}
-            </button>
-          ))}
-        </div>
+      {/* Grille 2x2 */}
+      <div style={{ 
+        display: 'grid', gridTemplateColumns: '1fr 1fr', 
+        gap: '12px', marginBottom: '16px' 
+      }}>
+        {[
+          { icon: '📖', titre: 'Liturgie du jour', sub: 'Lectures complètes', nav: 'parole', bg: 'var(--bg-card)' },
+          { icon: '✍️', titre: 'Mon carnet', sub: 'Écrire ma note', nav: 'ecrire', bg: 'var(--bg-card-alt)' },
+          { icon: '✦', titre: 'Guide spirituel', sub: 'Prière & guidance', nav: 'conseils', bg: 'var(--bg-card-guide)' },
+          { icon: '📚', titre: 'Mes notes', sub: 'Historique', nav: 'entrees', bg: 'var(--bg-card)' },
+        ].map(item => (
+          <button
+            key={item.nav}
+            onClick={() => setEcran(item.nav)}
+            style={{
+              background: item.bg, border: 'none',
+              borderRadius: '16px', padding: '16px 14px',
+              textAlign: 'left', cursor: 'pointer'
+            }}
+          >
+            <span style={{ fontSize: '22px', display: 'block', marginBottom: '8px' }}>
+              {item.icon}
+            </span>
+            <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-main)', margin: '0 0 2px' }}>
+              {item.titre}
+            </p>
+            <p style={{ fontSize: '11px', color: 'var(--text-soft)', margin: 0 }}>
+              {item.sub}
+            </p>
+          </button>
+        ))}
       </div>
+
+      
 
       {/* Stats */}
       <div className="stats-grid">
