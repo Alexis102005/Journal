@@ -1,14 +1,18 @@
 import { useState } from 'react'
+import { getIllustration } from '../utils/illustration'
 
 export default function Ecrire({ onSave, setEcran, langue }) {
   const [titre, setTitre] = useState('')
   const [contenu, setContenu] = useState('')
   const [mood, setMood] = useState('')
+  const [focus, setFocus] = useState(false)
   const [enregistrement, setEnregistrement] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState(null)
   const [audioBlob, setAudioBlob] = useState(null)
   const [audioUrl, setAudioUrl] = useState(null)
   const [transcriptionEnCours, setTranscriptionEnCours] = useState(false)
+
+  const illustration = getIllustration()
 
   const sauvegarder = () => {
     if (!contenu) return
@@ -26,6 +30,7 @@ export default function Ecrire({ onSave, setEcran, langue }) {
     setTitre('')
     setContenu('')
     setMood('')
+    setFocus(false)
     setEcran('entrees')
   }
 
@@ -39,7 +44,6 @@ export default function Ecrire({ onSave, setEcran, langue }) {
         const blob = new Blob(chunks, { type: 'audio/webm' })
         setAudioBlob(blob)
         setAudioUrl(URL.createObjectURL(blob))
-        // On ne transcrit pas automatiquement — bouton manuel
       }
       recorder.start()
       setMediaRecorder(recorder)
@@ -55,23 +59,19 @@ export default function Ecrire({ onSave, setEcran, langue }) {
     setEnregistrement(false)
   }
 
-  const transcrire = async (blobToTranscribe) => {
-    const blob = blobToTranscribe || audioBlob
-    if (!blob) return
+  const transcrire = async () => {
+    if (!audioBlob) return
     setTranscriptionEnCours(true)
     try {
       const reader = new FileReader()
-      reader.readAsDataURL(blob)
+      reader.readAsDataURL(audioBlob)
       reader.onloadend = async () => {
         try {
           const base64 = reader.result.split(',')[1]
           const res = await fetch('/api/transcrire', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              audio: base64,
-              langue: langue === 'en' ? 'en' : 'fr'
-            })
+            body: JSON.stringify({ audio: base64, langue: langue === 'en' ? 'en' : 'fr' })
           })
           const data = await res.json()
           if (data.text) {
@@ -81,9 +81,7 @@ export default function Ecrire({ onSave, setEcran, langue }) {
           } else {
             alert(langue === 'en' ? 'Transcription failed.' : 'Échec de la transcription.')
           }
-        } catch(e) {
-          console.error(e)
-        }
+        } catch(e) { console.error(e) }
         setTranscriptionEnCours(false)
       }
     } catch(e) {
@@ -92,15 +90,116 @@ export default function Ecrire({ onSave, setEcran, langue }) {
     }
   }
 
-  return (
+  // MODE FOCUS — plein écran immersif
+  if (focus) {
+    return (
       <div style={{
-        display: 'flex', flexDirection: 'column',
-         minHeight: 'calc(100vh - 80px)'
+        position: 'fixed', inset: 0, zIndex: 200,
+        backgroundImage: `url(${illustration})`,
+        backgroundSize: 'cover', backgroundPosition: 'center',
+        display: 'flex', flexDirection: 'column'
       }}>
+        {/* Overlay sombre pour lisibilité */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)'
+        }} />
+
+        {/* Barre du haut */}
+        <div style={{
+          position: 'relative', zIndex: 1,
+          display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', padding: '16px 20px'
+        }}>
+          <button onClick={() => setFocus(false)} style={{
+            background: 'rgba(255,255,255,0.15)', border: 'none',
+            borderRadius: '20px', padding: '8px 16px',
+            color: 'white', cursor: 'pointer', fontSize: '13px'
+          }}>
+            ← {langue === 'en' ? 'Reduce' : 'Réduire'}
+          </button>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+            {contenu.trim() ? contenu.trim().split(/\s+/).length : 0} {langue === 'en' ? 'words' : 'mots'}
+          </span>
+          <button onClick={sauvegarder} disabled={!contenu} style={{
+            background: contenu ? 'var(--accent)' : 'rgba(255,255,255,0.15)',
+            border: 'none', borderRadius: '20px', padding: '8px 16px',
+            color: 'white', cursor: contenu ? 'pointer' : 'not-allowed',
+            fontSize: '13px', fontWeight: '600'
+          }}>
+            {langue === 'en' ? 'Save' : 'Sauvegarder'}
+          </button>
+        </div>
+
+        {/* Zone de texte */}
+        <textarea
+          autoFocus
+          value={contenu}
+          onChange={e => setContenu(e.target.value)}
+          style={{
+            position: 'relative', zIndex: 1,
+            flex: 1, background: 'transparent', border: 'none',
+            padding: '20px 28px', color: 'white',
+            fontSize: '17px', lineHeight: '2', resize: 'none',
+            outline: 'none', fontFamily: 'Georgia, serif',
+            textShadow: '0 1px 3px rgba(0,0,0,0.8)'
+          }}
+          placeholder={langue === 'en' ? "Write freely..." : "Écris librement..."}
+        />
+
+        {/* Barre audio en bas */}
+        <div style={{
+          position: 'relative', zIndex: 1,
+          padding: '12px 20px', display: 'flex',
+          alignItems: 'center', gap: '10px',
+          background: 'rgba(0,0,0,0.3)'
+        }}>
+          {!enregistrement && !audioUrl && (
+            <button onClick={demarrerEnregistrement} style={{
+              background: 'rgba(255,255,255,0.15)', color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)', borderRadius: '24px',
+              padding: '8px 16px', fontSize: '13px', cursor: 'pointer'
+            }}>
+              🎙️ {langue === 'en' ? 'Record' : 'Dicter'}
+            </button>
+          )}
+          {enregistrement && (
+            <button onClick={arreterEnregistrement} style={{
+              background: 'rgba(220,38,38,0.4)', color: 'white',
+              border: '1px solid #dc2626', borderRadius: '24px',
+              padding: '8px 16px', fontSize: '13px', cursor: 'pointer'
+            }}>
+              ⏹️ {langue === 'en' ? 'Stop' : 'Arrêter'} ●
+            </button>
+          )}
+          {audioUrl && !enregistrement && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+              <audio controls src={audioUrl} style={{ flex: 1, height: '32px' }} />
+              <button onClick={transcrire} disabled={transcriptionEnCours} style={{
+                background: 'var(--accent)', color: 'white', border: 'none',
+                borderRadius: '20px', padding: '8px 14px',
+                fontSize: '12px', fontWeight: '600', cursor: 'pointer'
+              }}>
+                {transcriptionEnCours ? '⏳...' : '✨ Transcrire'}
+              </button>
+              <button onClick={() => { setAudioBlob(null); setAudioUrl(null) }}
+                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '18px' }}>
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // MODE NORMAL
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 80px)' }}>
       {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '16px 20px', borderBottom: '0.5px solid var(--border)'
+        padding: '16px 0', marginBottom: '12px'
       }}>
         <div>
           <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent)', letterSpacing: '0.1em' }}>
@@ -112,69 +211,76 @@ export default function Ecrire({ onSave, setEcran, langue }) {
             })}
           </p>
         </div>
-        <button
-          onClick={sauvegarder}
-          disabled={!contenu}
-          style={{
-            background: contenu ? 'linear-gradient(135deg, var(--accent), #5a52b8)' : 'var(--border)',
-            color: contenu ? 'white' : 'var(--text-muted)',
-            border: 'none', borderRadius: '12px',
-            padding: '10px 20px', fontSize: '14px', fontWeight: '600',
-            cursor: contenu ? 'pointer' : 'not-allowed'
-          }}
-        >
+        <button onClick={sauvegarder} disabled={!contenu} style={{
+          background: contenu ? 'var(--accent)' : 'var(--border)',
+          color: contenu ? 'white' : 'var(--text-muted)',
+          border: 'none', borderRadius: '12px',
+          padding: '10px 20px', fontSize: '14px', fontWeight: '600',
+          cursor: contenu ? 'pointer' : 'not-allowed'
+        }}>
           💾 {langue === 'en' ? 'Save' : 'Sauvegarder'}
         </button>
       </div>
 
-      {/* Humeur */}
-      <div style={{ padding: '10px 20px', borderBottom: '0.5px solid var(--border)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        {[['😄', langue === 'en' ? 'Good' : 'Bien'], ['😐', langue === 'en' ? 'Neutral' : 'Neutre'], ['😞', langue === 'en' ? 'Difficult' : 'Difficile'], ['💪', langue === 'en' ? 'Strong' : 'Fort'], ['🙏', langue === 'en' ? 'At peace' : 'En paix']].map(([emoji, label]) => (
-          <button
-            key={label}
-            onClick={() => setMood(`${emoji} ${label}`)}
-            style={{
-              padding: '5px 12px', borderRadius: '20px', fontSize: '12px',
-              border: `1px solid ${mood === `${emoji} ${label}` ? 'var(--accent)' : 'var(--border)'}`,
-              background: mood === `${emoji} ${label}` ? 'var(--accent-light)' : 'var(--bg-card)',
-              color: mood === `${emoji} ${label}` ? 'var(--accent)' : 'var(--text-secondary)',
-              cursor: 'pointer', fontWeight: '500'
-            }}
-          >
-            {emoji} {label}
-          </button>
-        ))}
+      {/* Mood chips */}
+      <div className="card" style={{ marginBottom: '12px' }}>
+        <p className="section-label">{langue === 'en' ? 'HOW DO YOU FEEL ?' : 'COMMENT TU TE SENS ?'}</p>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {[['😄', langue === 'en' ? 'Good' : 'Bien'],
+            ['😐', langue === 'en' ? 'Neutral' : 'Neutre'],
+            ['😞', langue === 'en' ? 'Difficult' : 'Difficile'],
+            ['💪', langue === 'en' ? 'Strong' : 'Fort'],
+            ['🙏', langue === 'en' ? 'At peace' : 'En paix']
+          ].map(([emoji, label]) => (
+            <button key={label} onClick={() => setMood(`${emoji} ${label}`)}
+              className={`chip ${mood === `${emoji} ${label}` ? 'actif' : ''}`}>
+              {emoji} {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Zone écriture */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Zone écriture + aperçu illustration */}
+      <div className="card" style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+        onClick={() => setFocus(true)}>
+        <div style={{
+          position: 'absolute', inset: 0, opacity: 0.08,
+          backgroundImage: `url(${illustration})`,
+          backgroundSize: 'cover', backgroundPosition: 'center'
+        }} />
         <input
           style={{
+            position: 'relative', zIndex: 1,
             border: 'none', borderBottom: '0.5px solid var(--border)',
-            padding: '16px 20px', fontSize: '18px', fontWeight: '700',
-            background: 'transparent', color: 'var(--text-primary)', outline: 'none', width: '100%'
+            padding: '0 0 12px', fontSize: '17px', fontWeight: '700',
+            background: 'transparent', color: 'var(--text-primary)',
+            outline: 'none', width: '100%', marginBottom: '12px'
           }}
           placeholder={langue === 'en' ? 'Title...' : 'Titre...'}
           value={titre}
-          onChange={e => setTitre(e.target.value)}
+          onChange={e => { e.stopPropagation(); setTitre(e.target.value) }}
+          onClick={e => e.stopPropagation()}
         />
-        <textarea
-          style={{
-            flex: 1, border: 'none', padding: '16px 20px',
-            fontSize: '15px', lineHeight: '1.8',
-            background: 'transparent', color: 'var(--text-primary)',
-            resize: 'none', outline: 'none', fontFamily: 'inherit'
-          }}
-          placeholder={langue === 'en' ? "What did you experience today? What is on your heart?" : "Qu'as-tu vécu aujourd'hui ? Qu'est-ce que Dieu a mis sur ton cœur ?"}
-          value={contenu}
-          onChange={e => setContenu(e.target.value)}
-        />
+        <p style={{
+          position: 'relative', zIndex: 1,
+          fontSize: '14px', color: contenu ? 'var(--text-primary)' : 'var(--text-muted)',
+          lineHeight: '1.8', minHeight: '80px'
+        }}>
+          {contenu || (langue === 'en' ? 'Tap to write...' : 'Appuie pour écrire...')}
+        </p>
+        <p style={{
+          position: 'relative', zIndex: 1,
+          fontSize: '11px', color: 'var(--accent)',
+          marginTop: '12px', fontWeight: '600'
+        }}>
+          ✏️ {langue === 'en' ? 'Open full screen' : 'Écrire en plein écran'} →
+        </p>
       </div>
 
       {/* Barre audio */}
       <div style={{
-        padding: '12px 20px', borderTop: '0.5px solid var(--border)',
-        background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px'
+        padding: '12px 0', borderTop: '0.5px solid var(--border)',
+        display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px'
       }}>
         {!enregistrement && !audioUrl && (
           <button onClick={demarrerEnregistrement} style={{
@@ -182,10 +288,9 @@ export default function Ecrire({ onSave, setEcran, langue }) {
             border: '1px solid var(--accent)', borderRadius: '24px',
             padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer'
           }}>
-            🎙️ {langue === 'en' ? 'Record' : 'Enregistrer'}
+            🎙️ {langue === 'en' ? 'Record' : 'Dicter'}
           </button>
         )}
-
         {enregistrement && (
           <button onClick={arreterEnregistrement} style={{
             background: '#fee2e2', color: '#dc2626',
@@ -195,21 +300,15 @@ export default function Ecrire({ onSave, setEcran, langue }) {
             ⏹️ {langue === 'en' ? 'Stop' : 'Arrêter'} ●
           </button>
         )}
-
         {audioUrl && !enregistrement && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
             <audio controls src={audioUrl} style={{ flex: 1, height: '32px' }} />
-            <button
-              onClick={() => transcrire()}
-              disabled={transcriptionEnCours}
-              style={{
-                background: 'linear-gradient(135deg, var(--accent), #5a52b8)',
-                color: 'white', border: 'none', borderRadius: '20px',
-                padding: '8px 14px', fontSize: '12px', fontWeight: '600',
-                cursor: 'pointer', whiteSpace: 'nowrap'
-              }}
-            >
-              {transcriptionEnCours ? '⏳...' : langue === 'en' ? '✨ Transcribe' : '✨ Transcrire'}
+            <button onClick={transcrire} disabled={transcriptionEnCours} style={{
+              background: 'var(--accent)', color: 'white',
+              border: 'none', borderRadius: '20px',
+              padding: '8px 14px', fontSize: '12px', fontWeight: '600', cursor: 'pointer'
+            }}>
+              {transcriptionEnCours ? '⏳...' : '✨ Transcrire'}
             </button>
             <button onClick={() => { setAudioBlob(null); setAudioUrl(null) }}
               style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '18px' }}>
