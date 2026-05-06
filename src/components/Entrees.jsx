@@ -36,7 +36,7 @@ export default function Entrees({ entrees, onUpdate, onDelete }) {
 
   const supprimerEntree = () => {
     if (confirm('Supprimer cette entrée ?')) {
-      onDelete(selected.id)
+      onDelete(selected.docId)
       fermer()
     }
   }

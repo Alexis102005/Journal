@@ -3,73 +3,112 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { type, lectures, mood, entreeSemaine, langue } = req.body
-  const lecturesFormatees = lectures?.map(l =>
-    `[${l.type || l.ref}]\n${l.texte?.slice(0, 1000)}`
-  ).join('\n\n---\n\n') || 'Lectures non disponibles'
+  const { type, lectures, mood, entreeSemaine, langue, messages } = req.body
 
   const langueInstruction = langue === 'en'
     ? 'You MUST respond ONLY in English. Never use French.'
     : 'Tu DOIS répondre UNIQUEMENT en français. Ne jamais utiliser l\'anglais.'
 
+  // --- MODE CHAT ---
+  if (type === 'chat') {
+    const systemPrompt = `${langueInstruction}
+
+Tu es un père spirituel catholique — direct, chaleureux, humain. Tu accompagnes cette personne dans sa vie spirituelle quotidienne.
+
+Tu as accès à ses entrées récentes du journal :
+${entreeSemaine || 'Aucune entrée récente.'}
+
+Lectures liturgiques du jour :
+${lectures?.map(l => `[${l.type || l.ref}]\n${l.texte?.slice(0, 500)}`).join('\n\n---\n\n') || 'Non disponibles'}
+
+Règles :
+- Réponds de façon conversationnelle, comme un ami qui connaît la personne
+- Sois direct et concret, jamais vague ou trop pieux
+- Si la personne parle d'une lutte ou d'une tentation, applique les principes catholiques avec douceur
+- N'oublie jamais que tomber ne sépare pas de Dieu, seul abandonner le fait
+- Garde tes réponses courtes (3-5 phrases max) sauf si la personne pose une question profonde
+- Ne te répète jamais d'une réponse à l'autre`
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GROQ_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 400,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages
+          ]
+        })
+      })
+      const data = await response.json()
+      const texte = data.choices?.[0]?.message?.content || ''
+      return res.status(200).json({ texte })
+    } catch (e) {
+      return res.status(500).json({ error: e.message })
+    }
+  }
+
+  // --- MODES EXISTANTS (résumé, prière, guidance) ---
+  const lecturesFormatees = lectures?.map(l =>
+    `[${l.type || l.ref}]\n${l.texte?.slice(0, 1000)}`
+  ).join('\n\n---\n\n') || 'Lectures non disponibles'
+
   const prompts = {
     resume: `${langueInstruction}
 
-You are a Catholic spiritual companion, warm and caring.
+Tu es un accompagnateur spirituel catholique, chaleureux.
 
-Here are the person's journal entries this week:
-${mood || 'No entries this week.'}
+Voici les entrées du journal cette semaine :
+${mood || 'Aucune entrée cette semaine.'}
 
-Write a spiritual and personal weekly review in 4-5 sentences:
-- What themes or struggles come up often?
-- What has changed or progressed?
-- What God seems to be saying through this week
-Speak directly to the person using "you", in a warm and honest way.
-Respond in plain text, no JSON, no markdown.`,
+Écris un bilan spirituel et personnel en 4-5 phrases :
+- Quels thèmes ou luttes reviennent souvent ?
+- Qu'est-ce qui a changé ou progressé ?
+- Ce que Dieu semble dire à travers cette semaine
+Parle directement à la personne avec "tu", de façon chaleureuse et honnête.
+Réponds en texte simple, pas de JSON, pas de markdown.`,
 
     priere: `${langueInstruction}
 
-You are a Catholic spiritual companion. 
+Tu es un accompagnateur spirituel catholique.
 
-Here are today's liturgical readings:
+Voici les lectures liturgiques du jour :
 ${lecturesFormatees}
 
-The person is feeling: ${mood || 'neutral'} today.
-${entreeSemaine ? `What they lived this week:\n${entreeSemaine}` : ''}
+La personne ressent : ${mood || 'neutre'} aujourd'hui.
+${entreeSemaine ? `Ce qu'elle a vécu cette semaine :\n${entreeSemaine}` : ''}
 
-Write a short prayer (5-6 lines) inspired by the readings and what they lived. 
-The prayer must be simple, sincere, spoken directly to God (use "Lord", "Father"...).
-Respond in plain text, no JSON, no markdown.`,
+Écris une courte prière (5-6 lignes) inspirée des lectures et de ce qu'elle a vécu.
+La prière doit être simple, sincère, adressée à Dieu (utilise "Seigneur", "Père"...).
+Réponds en texte simple, pas de JSON, pas de markdown.`,
 
     guidance: `${langueInstruction}
 
-You are a Catholic spiritual companion who speaks like a direct spiritual father AND a faith brother walking alongside the person. Warm, frank, and human.
+Tu es un père spirituel catholique qui parle comme un frère de foi qui marche aux côtés de la personne. Chaleureux, franc, humain.
 
-Here are today's liturgical readings:
+Lectures liturgiques du jour :
 ${lecturesFormatees}
 
-The person is feeling: ${mood || 'neutral'} today.
+La personne ressent : ${mood || 'neutre'} aujourd'hui.
 
-STEP 1 — If context is missing, ask ONE short question to better understand their situation. Just one.
+ÉTAPE 1 — Si le contexte manque, pose UNE courte question pour mieux comprendre la situation.
 
-STEP 2 — Once context is clear, give guidance with these rules:
-- Be direct and concrete, never vague or overly pious
-- Acknowledge the other person's fault if mentioned — but refocus on what they can control
-- Don't put all the blame on the person
-- Remind Catholic truths when relevant: the Bible calls us to honor father and mother, forgiveness is for their own freedom not the other's, God forgives without keeping score
-- Practical advice based on situation:
-  * Idle → find something to do
-  * Night → set a phone cutoff time
-  * Mid-activity → let the thought pass without fighting it
-  * Temptation after emotional pain → identify the pain behind it
-- Remind that falling doesn't separate from God — only giving up does
-- Shame that prevents prayer after a fall is the real enemy
-- Never count days without — it's not a race
-- Always end with ONE concrete Catholic recommendation:
-  a slow Our Father, a decade of the rosary, or a specific Bible passage
-- End with ONE short conscience question inviting a concrete gesture
-- 6-8 sentences max, never robotic, never generic
-- Speak to ONE person, use "you", speak to the heart`
+ÉTAPE 2 — Une fois le contexte clair, donne une guidance avec ces règles :
+- Sois direct et concret, jamais vague
+- Reconnais la faute de l'autre si mentionnée, mais recentre sur ce que la personne peut contrôler
+- Rappelle les vérités catholiques quand pertinent
+- Conseils pratiques selon la situation
+- Rappelle que tomber ne sépare pas de Dieu
+- La honte qui empêche de prier après une chute est le vrai ennemi
+- Termine toujours par UNE recommandation catholique concrète
+- Termine par UNE courte question de conscience
+- 6-8 phrases max, jamais robotique
+- Parle à UNE personne, utilise "tu"`
   }
 
   const prompt = prompts[type]
@@ -88,12 +127,10 @@ STEP 2 — Once context is clear, give guidance with these rules:
         messages: [{ role: 'user', content: prompt }]
       })
     })
-
     const data = await response.json()
     const texte = data.choices?.[0]?.message?.content || ''
     res.status(200).json({ texte })
-
-  } catch(e) {
+  } catch (e) {
     res.status(500).json({ error: e.message })
   }
 }

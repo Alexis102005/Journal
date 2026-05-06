@@ -1,13 +1,13 @@
-import { initializeApp } from "firebase/app"
-import { getFirestore } from "firebase/firestore"
+import { initializeApp } from 'firebase/app'
+import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyCMrHOzuvCSz7vRM653A_2rjVdEsjJ7XmM",
+  authDomain: "mon-journal-f633f.firebaseapp.com",
+  projectId: "mon-journal-f633f",
+  storageBucket: "mon-journal-f633f.firebasestorage.app",
+  messagingSenderId: "968634508272",
+  appId: "1:968634508272:web:7d6563ee02493bd2f53335"
 }
 
 const app = initializeApp(firebaseConfig)
