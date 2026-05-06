@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
-import { db } from './firebase'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, query } from 'firebase/firestore'
+import { db, auth } from './firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, query, where } from 'firebase/firestore'
 import Accueil from './components/Accueil'
 import Ecrire from './components/Ecrire'
 import Entrees from './components/Entrees'
 import Parole from './components/ParoleAuto'
 import { traductions } from './i18n'
 import ConseilsIA from './components/ConseilsIA'
+import Login from './components/Login'
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -15,33 +17,52 @@ export default function App() {
   const [entrees, setEntrees] = useState([])
   const [chargement, setChargement] = useState(true)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
+  const [utilisateur, setUtilisateur] = useState(null)
+  const [authChargement, setAuthChargement] = useState(true)
 
   const t = traductions[langue] || traductions.fr
 
-  // Lire les entrées depuis Firestore au démarrage
+  // Écouter l'état de connexion
   useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setUtilisateur(user)
+      setAuthChargement(false)
+    })
+    return () => unsub()
+  }, [])
+
+  // Charger les entrées quand l'utilisateur est connecté
+  useEffect(() => {
+    if (!utilisateur) {
+      setEntrees([])
+      setChargement(false)
+      return
+    }
     const chargerEntrees = async () => {
+      setChargement(true)
       try {
-        const q = query(collection(db, 'entrees'), orderBy('id', 'desc'))
+        const q = query(
+          collection(db, 'entrees'),
+          where('userId', '==', utilisateur.uid),
+          orderBy('id', 'desc')
+        )
         const snapshot = await getDocs(q)
-        const data = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }))
+        const data = snapshot.docs.map(d => ({ ...d.data(), docId: d.id }))
         setEntrees(data)
       } catch (e) {
-        console.error('Erreur chargement Firestore:', e)
+        console.error('Erreur chargement:', e)
       }
       setChargement(false)
     }
     chargerEntrees()
-  }, [])
+  }, [utilisateur])
 
-  // Détecter changement de hash admin
   useEffect(() => {
     const onHashChange = () => setIsAdmin(window.location.hash === '#admin')
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  // Thème
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : '')
     localStorage.setItem('theme', theme)
@@ -54,8 +75,9 @@ export default function App() {
 
   const ajouterEntree = async (entree) => {
     try {
-      const docRef = await addDoc(collection(db, 'entrees'), entree)
-      setEntrees([{ ...entree, docId: docRef.id }, ...entrees])
+      const entreeAvecUser = { ...entree, userId: utilisateur.uid }
+      const docRef = await addDoc(collection(db, 'entrees'), entreeAvecUser)
+      setEntrees([{ ...entreeAvecUser, docId: docRef.id }, ...entrees])
     } catch (e) {
       console.error('Erreur ajout:', e)
     }
@@ -80,10 +102,29 @@ export default function App() {
     }
   }
 
+  const seDeconnecter = async () => {
+    await signOut(auth)
+    setEntrees([])
+    setEcran('accueil')
+  }
+
+  // Écrans de chargement
+  if (authChargement) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <p style={{ color: 'var(--text-muted)' }}>Chargement...</p>
+      </div>
+    )
+  }
+
+  // Pas connecté → écran de login
+  if (!utilisateur) return <Login />
+
+  // Connecté → app normale
   if (chargement) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-muted)' }}>
-        <p>Chargement...</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <p style={{ color: 'var(--text-muted)' }}>Chargement...</p>
       </div>
     )
   }
@@ -114,12 +155,20 @@ export default function App() {
           style={{
             padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
             border: '1px solid var(--border)',
-            background: 'var(--bg-card)',
-            color: 'var(--text-muted)',
-            cursor: 'pointer'
+            background: 'var(--bg-card)', color: 'var(--text-muted)', cursor: 'pointer'
           }}
         >
           {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+        <button
+          onClick={seDeconnecter}
+          style={{
+            padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
+            border: '1px solid var(--border)',
+            background: 'var(--bg-card)', color: 'var(--text-muted)', cursor: 'pointer'
+          }}
+        >
+          🚪
         </button>
       </div>
 
@@ -128,7 +177,7 @@ export default function App() {
         {ecran === 'ecrire' && <Ecrire onSave={ajouterEntree} setEcran={setEcran} langue={langue} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
-        {ecran === 'conseils' && <ConseilsIA entrees={entrees} langue={langue} />}
+        {ecran === 'conseils' && <ConseilsIA entrees={entrees} langue={langue} utilisateur={utilisateur} />}
       </div>
 
       <nav className="nav-bar">
