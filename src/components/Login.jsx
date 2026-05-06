@@ -1,10 +1,15 @@
-import { signInWithPopup } from 'firebase/auth'
+import { signInWithRedirect, getRedirectResult } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase'
+import { useEffect } from 'react'
 
 export default function Login() {
+    useEffect(() => {
+        getRedirectResult(auth).catch(e => console.error(e))
+    }, [])
+
     const seConnecter = async () => {
         try {
-            await signInWithPopup(auth, googleProvider)
+            await signInWithRedirect(auth, googleProvider)
         } catch (e) {
             console.error('Erreur connexion:', e)
         }
