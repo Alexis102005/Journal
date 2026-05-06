@@ -12,5 +12,19 @@
         "*.local"
       ]
     }
-  ]
+  ],
+  "hosting": {
+    "public": "i",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
 }

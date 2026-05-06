@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { db, auth } from './firebase'
-import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, query, where } from 'firebase/firestore'
 import Accueil from './components/Accueil'
 import Ecrire from './components/Ecrire'
@@ -28,15 +28,6 @@ export default function App() {
       setUtilisateur(user)
       setAuthChargement(false)
     })
-
-    getRedirectResult(auth)
-      .then(result => {
-        if (result?.user) {
-          setUtilisateur(result.user)
-        }
-      })
-      .catch(e => console.error('Redirect error:', e))
-
     return () => unsub()
   }, [])
 
