@@ -53,6 +53,53 @@ Règles :
     }
   }
 
+  // --- MODE EXTRACTION MÉMOIRE ---
+  if (type === 'extraire_memoire') {
+    const { historique } = req.body
+
+    const prompt = `Tu es un assistant qui analyse une conversation spirituelle et en extrait les faits importants sur la personne.
+
+Voici la conversation :
+${historique.map(m => `${m.role === 'user' ? 'Personne' : 'Accompagnateur'}: ${m.content}`).join('\n')}
+
+Extrais uniquement les faits significatifs sur la personne — ses luttes récurrentes, ses décisions prises, ses patterns spirituels, ses intentions.
+Ignore les généralités et les conseils donnés.
+
+Réponds UNIQUEMENT en JSON, sans markdown, sans backticks :
+{
+  "faits": [
+    { "type": "lutte", "contenu": "..." },
+    { "type": "decision", "contenu": "..." },
+    { "type": "pattern", "contenu": "..." }
+  ]
+}
+
+Types possibles : lutte, decision, pattern, intention.
+Maximum 5 faits. Si rien de significatif, retourne {"faits": []}.`
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GROQ_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 400,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+      const data = await response.json()
+      const texte = data.choices?.[0]?.message?.content || '{"faits":[]}'
+      const clean = texte.replace(/```json|```/g, '').trim()
+      const parsed = JSON.parse(clean)
+      return res.status(200).json(parsed)
+    } catch(e) {
+      return res.status(500).json({ error: e.message })
+    }
+  }
+
   // --- MODES EXISTANTS (résumé, prière, guidance) ---
   const lecturesFormatees = lectures?.map(l =>
     `[${l.type || l.ref}]\n${l.texte?.slice(0, 1000)}`
