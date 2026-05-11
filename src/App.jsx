@@ -10,6 +10,7 @@ import { traductions } from './i18n'
 import ConseilsIA from './components/ConseilsIA'
 import Login from './components/Login'
 import { SpeedInsights } from '@vercel/speed-insights/react'
+import { Analytics } from '@vercel/analytics/react'
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -231,6 +232,8 @@ export default function App() {
           📓<span>{t.entrees}</span>
         </button>
       </nav>
+      <Analytics />
+      <SpeedInsights />
     </div>
   )
 }
