@@ -231,7 +231,6 @@ export default function App() {
           📓<span>{t.entrees}</span>
         </button>
       </nav>
-      <SpeedInsights />
     </div>
   )
 }
