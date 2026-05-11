@@ -9,6 +9,7 @@ import Parole from './components/ParoleAuto'
 import { traductions } from './i18n'
 import ConseilsIA from './components/ConseilsIA'
 import Login from './components/Login'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -230,6 +231,7 @@ export default function App() {
           📓<span>{t.entrees}</span>
         </button>
       </nav>
+      <SpeedInsights />
     </div>
   )
 }

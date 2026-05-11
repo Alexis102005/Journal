@@ -11,10 +11,11 @@ export default function Ecrire({ onSave, setEcran, langue }) {
   const [audioBlob, setAudioBlob] = useState(null)
   const [audioUrl, setAudioUrl] = useState(null)
   const [transcriptionEnCours, setTranscriptionEnCours] = useState(false)
+  const [sauvegardeReussie, setSauvegardeReussie] = useState(false)
 
   const illustration = getIllustration()
 
-  const sauvegarder = () => {
+  const sauvegarder = async () => {
     if (!contenu) return
     const entree = {
       id: Date.now(),
@@ -26,12 +27,8 @@ export default function Ecrire({ onSave, setEcran, langue }) {
       mood,
       mots: contenu.trim().split(/\s+/).length
     }
-    onSave(entree)
-    setTitre('')
-    setContenu('')
-    setMood('')
-    setFocus(false)
-    setEcran('entrees')
+    await onSave(entree)
+    setSauvegardeReussie(true)
   }
 
   const demarrerEnregistrement = async () => {
@@ -188,6 +185,74 @@ export default function Ecrire({ onSave, setEcran, langue }) {
               </button>
             </div>
           )}
+        </div>
+      </div>
+    )
+  }
+
+  // ÉCRAN DE SUCCÈS APRÈS SAUVEGARDE
+  if (sauvegardeReussie) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        minHeight: 'calc(100vh - 120px)', padding: '30px', textAlign: 'center',
+        animation: 'fadeIn 0.6s ease-out'
+      }}>
+        <div style={{ 
+          width: '80px', height: '80px', borderRadius: '50%', background: 'var(--accent-light)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px',
+          marginBottom: '24px', boxShadow: '0 8px 24px rgba(var(--accent-rgb), 0.1)'
+        }}>✨</div>
+        
+        <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px', color: 'var(--text-primary)' }}>
+          {langue === 'en' ? 'Entry saved!' : 'Note sauvegardée !'}
+        </h2>
+        
+        <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6', maxWidth: '280px', marginBottom: '32px' }}>
+          {langue === 'en' 
+            ? 'Your thoughts are now safe. Would you like to explore them with the AI?' 
+            : 'Tes pensées sont maintenant en sécurité. Veux-tu les explorer avec l\'IA ?'}
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '280px' }}>
+          <button 
+            onClick={() => setEcran('conseils')}
+            style={{
+              background: 'var(--accent)', color: 'white', border: 'none',
+              borderRadius: '16px', padding: '16px', fontSize: '15px', fontWeight: '700',
+              cursor: 'pointer', transition: 'transform 0.2s',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+            }}
+          >
+            💬 {langue === 'en' ? 'Discuss with AI' : "En discuter avec l'IA"}
+          </button>
+          
+          <button 
+            onClick={() => setEcran('entrees')}
+            style={{
+              background: 'var(--bg-card)', color: 'var(--text-primary)',
+              border: '1px solid var(--border)', borderRadius: '16px',
+              padding: '16px', fontSize: '15px', fontWeight: '600', cursor: 'pointer'
+            }}
+          >
+            📓 {langue === 'en' ? 'View my entries' : 'Voir mes notes'}
+          </button>
+
+          <button 
+            onClick={() => {
+              setSauvegardeReussie(false);
+              setTitre('');
+              setContenu('');
+              setMood('');
+              setFocus(false);
+            }}
+            style={{
+              background: 'transparent', color: 'var(--text-muted)', border: 'none',
+              marginTop: '12px', fontSize: '13px', cursor: 'pointer', fontWeight: '500'
+            }}
+          >
+            {langue === 'en' ? 'Write something else' : 'Écrire une autre note'}
+          </button>
         </div>
       </div>
     )
