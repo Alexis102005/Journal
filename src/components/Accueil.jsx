@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { traductions } from '../i18n'
 
-export default function Accueil({ entrees, langue, theme, setTheme, setEcran }) {
+export default function Accueil({ entrees, langue, theme, setTheme, setEcran, onOuvrirWrapped }) {
+  const [wrappedChargement, setWrappedChargement] = useState(false)
   const [liturgie, setLiturgie] = useState(null)
   const [chargement, setChargement] = useState(true)
   const [priere, setPriere] = useState('')
@@ -38,6 +39,35 @@ export default function Accueil({ entrees, langue, theme, setTheme, setEcran }) 
   }
 
   const totalMots = entrees.reduce((acc, e) => acc + (e.mots || 0), 0)
+
+  const ouvrirWrapped = async () => {
+    setWrappedChargement(true)
+    try {
+      const debut = new Date()
+      const estFinDeMois = debut.getDate() === new Date(debut.getFullYear(), debut.getMonth() + 1, 0).getDate()
+      const periode = estFinDeMois ? 'mois' : 'semaine'
+
+      debut.setDate(estFinDeMois ? 1 : debut.getDate() - 7)
+      const entreesperiode = entrees.filter(e => new Date(e.id) >= debut)
+
+      if (entreesperiode.length < 3) {
+        alert(langue === 'en' ? 'Not enough entries yet (minimum 3).' : 'Pas assez d\'entrées encore (minimum 3).')
+        setWrappedChargement(false)
+        return
+      }
+
+      const res = await fetch('/api/wrapped', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entrees: entreesperiode, periode, langue })
+      })
+      const data = await res.json()
+      onOuvrirWrapped(data, periode)
+    } catch(e) {
+      console.error(e)
+    }
+    setWrappedChargement(false)
+  }
 
   useEffect(() => {
     fetch(`/api/liturgie?lang=${langue}`)
@@ -251,6 +281,29 @@ export default function Accueil({ entrees, langue, theme, setTheme, setEcran }) 
           <p className="stat-sub">{t.depuisDebut}</p>
         </div>
       </div>
+      {(() => {
+        const jour = new Date().getDay()
+        const jourMois = new Date().getDate()
+        const dernierJour = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
+        const afficher = jour === 0 || jourMois === dernierJour
+        if (!afficher) return null
+        return (
+          <button
+            onClick={ouvrirWrapped}
+            disabled={wrappedChargement}
+            style={{
+              width: '100%', padding: '16px', borderRadius: '16px',
+              background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+              border: 'none', color: 'white', cursor: 'pointer',
+              fontSize: '15px', fontWeight: '700', marginTop: '12px',
+              opacity: wrappedChargement ? 0.7 : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+            }}
+          >
+            {wrappedChargement ? '✨ Chargement...' : `✨ ${jour === 0 ? 'Wrapped de la semaine' : 'Wrapped du mois'}`}
+          </button>
+        )
+      })()}
     </div>
   )
 }

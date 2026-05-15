@@ -125,6 +125,12 @@ export default function App() {
     verifierWrapped()
   }, [utilisateur, entrees])
 
+  const ouvrirWrapped = (data, periode) => {
+    setWrappedData(data)
+    setWrappedPeriode(periode)
+    setWrappedVisible(true)
+  }
+
   const changerLangue = (l) => {
     setLangue(l)
     localStorage.setItem('langue', l)
@@ -262,7 +268,16 @@ export default function App() {
       </div>
 
       <div className="contenu">
-        {ecran === 'accueil' && <Accueil entrees={entrees} langue={langue} theme={theme} setTheme={setTheme} setEcran={setEcran} />}
+        {ecran === 'accueil' && (
+          <Accueil
+            entrees={entrees}
+            langue={langue}
+            theme={theme}
+            setTheme={setTheme}
+            setEcran={setEcran}
+            onOuvrirWrapped={ouvrirWrapped}
+          />
+        )}
         {ecran === 'ecrire' && <Ecrire onSave={ajouterEntree} setEcran={setEcran} langue={langue} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
