@@ -15,6 +15,21 @@ export default function Accueil({ entrees, langue, theme, setTheme, setEcran, on
   const heure = new Date().getHours()
   const estSoir = heure >= 20
 
+  const aEcritAujourdhui = entrees.some(e => {
+    const dateEntree = new Date(e.id)
+    const d = new Date()
+    return dateEntree.getFullYear() === d.getFullYear() &&
+           dateEntree.getMonth() === d.getMonth() &&
+           dateEntree.getDate() === d.getDate()
+  })
+
+  const boutonsPriere = []
+  if (!estSoir) {
+    boutonsPriere.push({ type: 'matin', icon: '🌅', label: langue === 'en' ? 'Morning' : 'Matin' })
+  } else if (aEcritAujourdhui) {
+    boutonsPriere.push({ type: 'soir', icon: '🌙', label: langue === 'en' ? 'Evening' : 'Soir' })
+  }
+
   const today = new Date().toLocaleDateString(langue === 'en' ? 'en-GB' : 'fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   })
@@ -199,37 +214,38 @@ export default function Accueil({ entrees, langue, theme, setTheme, setEcran, on
       {/* Prières matin / soir */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <p className="section-label">🙏 Prière du jour</p>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-          {[
-            { type: 'matin', icon: '🌅', label: 'Matin' },
-            { type: 'soir', icon: '🌙', label: 'Soir' }
-          ].map(btn => {
-            const estMisEnAvant = (btn.type === 'soir') === estSoir
-            return (
+        
+        {boutonsPriere.length > 0 ? (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            {boutonsPriere.map(btn => (
               <button
                 key={btn.type}
                 onClick={() => demanderPriere(btn.type)}
                 disabled={priereChargement}
                 style={{
                   flex: 1, padding: '14px 8px', borderRadius: '14px',
-                  border: `1px solid ${estMisEnAvant ? 'var(--accent)' : 'var(--border)'}`,
-                  background: estMisEnAvant ? 'var(--accent-light)' : 'var(--bg-card)',
-                  color: estMisEnAvant ? 'var(--accent)' : 'var(--text-muted)',
+                  border: '1px solid var(--accent)',
+                  background: 'var(--accent-light)',
+                  color: 'var(--accent)',
                   cursor: priereChargement ? 'not-allowed' : 'pointer',
                   opacity: priereChargement ? 0.6 : 1,
-                  fontSize: '13px', fontWeight: estMisEnAvant ? '700' : '500',
+                  fontSize: '13px', fontWeight: '700',
                   display: 'flex', flexDirection: 'column',
                   alignItems: 'center', gap: '4px',
                   transition: 'all 0.15s',
-                  boxShadow: estMisEnAvant ? 'var(--shadow-card)' : 'none'
+                  boxShadow: 'var(--shadow-card)'
                 }}
               >
                 <span style={{ fontSize: '22px' }}>{btn.icon}</span>
                 {btn.label}
               </button>
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic', margin: 0, textAlign: 'center', padding: '12px 0' }}>
+            {langue === 'en' ? 'Write in your journal to unlock the evening prayer.' : 'Écris dans ton journal pour débloquer la prière du soir.'}
+          </p>
+        )}
 
         {priereChargement && (
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontStyle: 'italic', textAlign: 'center', padding: '8px' }}>
