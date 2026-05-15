@@ -10,6 +10,7 @@ import { traductions } from './i18n'
 import ConseilsIA from './components/ConseilsIA'
 import Login from './components/Login'
 import { SpeedInsights } from '@vercel/speed-insights/react'
+import WrappedPopup from './components/WrappedPopup'
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -21,6 +22,9 @@ export default function App() {
   const [utilisateur, setUtilisateur] = useState(null)
   const [authChargement, setAuthChargement] = useState(true)
   const [menuOuvert, setMenuOuvert] = useState(false)
+  const [wrappedData, setWrappedData] = useState(null)
+  const [wrappedPeriode, setWrappedPeriode] = useState('')
+  const [wrappedVisible, setWrappedVisible] = useState(false)
 
   const t = traductions[langue] || traductions.fr
 
@@ -69,6 +73,57 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : '')
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    if (!utilisateur || entrees.length === 0) return
+
+    const verifierWrapped = async () => {
+      const maintenant = new Date()
+      const jourSemaine = maintenant.getDay() // 0 = dimanche
+      const jourMois = maintenant.getDate()
+      const dernierJourMois = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 0).getDate()
+
+      const estDimanche = true // forcer pour tester
+      const estFinDeMois = jourMois === dernierJourMois
+
+      if (!estDimanche && !estFinDeMois) return
+
+      const periode = estFinDeMois ? 'mois' : 'semaine'
+      const cleCache = `wrapped_${utilisateur.uid}_${maintenant.getFullYear()}_${maintenant.getMonth()}_${periode}`
+
+      // Vérifier si déjà affiché aujourd'hui
+      const dejaVu = localStorage.getItem(cleCache)
+      if (dejaVu) return
+
+      // Filtrer les entrées de la période
+      const debut = new Date()
+      if (periode === 'semaine') {
+        debut.setDate(debut.getDate() - 7)
+      } else {
+        debut.setDate(1)
+      }
+
+      const entreesperiode = entrees.filter(e => new Date(e.id) >= debut)
+      if (entreesperiode.length < 3) return
+
+      try {
+        const res = await fetch('/api/wrapped', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entrees: entreesperiode, periode, langue })
+        })
+        const data = await res.json()
+        setWrappedData(data)
+        setWrappedPeriode(periode)
+        setWrappedVisible(true)
+        localStorage.setItem(cleCache, 'true')
+      } catch(e) {
+        console.error('Erreur wrapped:', e)
+      }
+    }
+
+    verifierWrapped()
+  }, [utilisateur, entrees])
 
   const changerLangue = (l) => {
     setLangue(l)
@@ -231,6 +286,13 @@ export default function App() {
           📓<span>{t.entrees}</span>
         </button>
       </nav>
+      {wrappedVisible && wrappedData && (
+        <WrappedPopup
+          data={wrappedData}
+          periode={wrappedPeriode}
+          onClose={() => setWrappedVisible(false)}
+        />
+      )}
     </div>
   )
 }
