@@ -83,7 +83,7 @@ export default function App() {
       const jourMois = maintenant.getDate()
       const dernierJourMois = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 0).getDate()
 
-      const estDimanche = true // forcer pour tester
+      const estDimanche = jourSemaine === 0
       const estFinDeMois = jourMois === dernierJourMois
 
       if (!estDimanche && !estFinDeMois) return
