@@ -11,6 +11,7 @@ import ConseilsIA from './components/ConseilsIA'
 import Login from './components/Login'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import WrappedPopup from './components/WrappedPopup'
+import Parametres from './components/Parametres'
 
 export default function App() {
   const [ecran, setEcran] = useState('accueil')
@@ -21,7 +22,6 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [utilisateur, setUtilisateur] = useState(null)
   const [authChargement, setAuthChargement] = useState(true)
-  const [menuOuvert, setMenuOuvert] = useState(false)
   const [wrappedData, setWrappedData] = useState(null)
   const [wrappedPeriode, setWrappedPeriode] = useState('')
   const [wrappedVisible, setWrappedVisible] = useState(false)
@@ -195,76 +195,22 @@ export default function App() {
   return (
     <div className="app">
       <div style={{
-        position: 'fixed', top: '12px', right: '12px',
-        display: 'flex', gap: '4px', zIndex: 100
+        position: 'fixed', top: '12px', right: '12px', zIndex: 100
       }}>
-        {['fr', 'en'].map(l => (
-          <button
-            key={l}
-            onClick={() => changerLangue(l)}
-            style={{
-              padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
-              border: '1px solid var(--border)',
-              background: langue === l ? 'var(--accent)' : 'var(--bg-card)',
-              color: langue === l ? 'white' : 'var(--text-muted)',
-              cursor: 'pointer'
-            }}
-          >
-            {l === 'fr' ? '🇫🇷' : '🇬🇧'}
-          </button>
-        ))}
         <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onClick={() => setEcran('parametres')}
           style={{
-            padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
-            border: '1px solid var(--border)',
-            background: 'var(--bg-card)', color: 'var(--text-muted)', cursor: 'pointer'
+            width: '36px', height: '36px', borderRadius: '50%',
+            border: '2px solid var(--accent)',
+            padding: 0, cursor: 'pointer', overflow: 'hidden',
+            background: 'var(--bg-card)'
           }}
         >
-          {theme === 'dark' ? '☀️' : '🌙'}
+          {utilisateur?.photoURL
+            ? <img src={utilisateur.photoURL} width="36" height="36" style={{ display: 'block' }} />
+            : <span style={{ fontSize: '16px' }}>👤</span>
+          }
         </button>
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setMenuOuvert(!menuOuvert)}
-            style={{
-              width: '32px', height: '32px', borderRadius: '50%',
-              border: '2px solid var(--accent)',
-              padding: 0, cursor: 'pointer', overflow: 'hidden',
-              background: 'var(--bg-card)'
-            }}
-          >
-            {utilisateur?.photoURL
-              ? <img src={utilisateur.photoURL} width="32" height="32" style={{ display: 'block' }} />
-              : <span style={{ fontSize: '14px' }}>👤</span>
-            }
-          </button>
-
-          {menuOuvert && (
-            <div style={{
-              position: 'absolute', right: 0, top: '40px',
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              borderRadius: '12px', padding: '12px', minWidth: '180px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 200
-            }}>
-              <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>
-                {utilisateur?.displayName}
-              </p>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                {utilisateur?.email}
-              </p>
-              <button
-                onClick={() => { seDeconnecter(); setMenuOuvert(false) }}
-                style={{
-                  width: '100%', padding: '8px', borderRadius: '8px',
-                  border: '1px solid #e05050', background: 'transparent',
-                  color: '#e05050', fontSize: '13px', cursor: 'pointer'
-                }}
-              >
-                🚪 Se déconnecter
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="contenu">
@@ -282,6 +228,16 @@ export default function App() {
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
         {ecran === 'conseils' && <ConseilsIA entrees={entrees} langue={langue} utilisateur={utilisateur} />}
+        {ecran === 'parametres' && (
+          <Parametres
+            langue={langue}
+            changerLangue={changerLangue}
+            theme={theme}
+            setTheme={setTheme}
+            utilisateur={utilisateur}
+            seDeconnecter={seDeconnecter}
+          />
+        )}
       </div>
 
       <nav className="nav-bar">

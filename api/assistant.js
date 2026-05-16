@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { type, lectures, mood, entreeSemaine, langue, messages } = req.body
+  const { type, lectures, mood, entreeSemaine, langue, messages, entreeDuJour } = req.body
 
   const langueInstruction = langue === 'en'
     ? 'You MUST respond ONLY in English. Never use French.'
@@ -119,6 +119,18 @@ ${mood || 'Aucune entrée cette semaine.'}
 - Ce que Dieu semble dire à travers cette semaine
 Parle directement à la personne avec "tu", de façon chaleureuse et honnête.
 Réponds en texte simple, pas de JSON, pas de markdown.`,
+
+    intro_jour: `${langueInstruction}
+
+Tu es un accompagnateur spirituel catholique chaleureux.
+La personne vient d'écrire cette entrée dans son journal aujourd'hui :
+"${entreeDuJour}"
+
+Ton but : 
+1. Fais un résumé bref et très chaleureux de ce qu'elle vient de partager (1 à 2 phrases max).
+2. Pose-lui UNE seule question ouverte et profonde pour l'aider à aller plus loin, à réfléchir sur ce qu'elle vient d'écrire, ou à voir où Dieu l'attend là-dedans.
+
+Parle directement à la personne avec "tu". Réponds en texte simple (pas de markdown).`,
 
     priere: `${langueInstruction}
 

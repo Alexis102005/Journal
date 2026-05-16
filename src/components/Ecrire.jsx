@@ -1,10 +1,21 @@
 import { useState } from 'react'
 import { getIllustration } from '../utils/illustration'
 
+const getLocalDatetimeString = () => {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 export default function Ecrire({ onSave, setEcran, langue }) {
   const [titre, setTitre] = useState('')
   const [contenu, setContenu] = useState('')
   const [mood, setMood] = useState('')
+  const [dateSelectionnee, setDateSelectionnee] = useState(getLocalDatetimeString)
   const [focus, setFocus] = useState(false)
   const [enregistrement, setEnregistrement] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState(null)
@@ -17,9 +28,12 @@ export default function Ecrire({ onSave, setEcran, langue }) {
 
   const sauvegarder = async () => {
     if (!contenu) return
+    
+    const timestamp = new Date(dateSelectionnee).getTime() || Date.now()
+
     const entree = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString('fr-FR', {
+      id: timestamp,
+      date: new Date(timestamp).toLocaleDateString('fr-FR', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
       }),
       titre: titre || 'Sans titre',
@@ -244,6 +258,7 @@ export default function Ecrire({ onSave, setEcran, langue }) {
               setTitre('');
               setContenu('');
               setMood('');
+              setDateSelectionnee(getLocalDatetimeString());
               setFocus(false);
             }}
             style={{
@@ -267,14 +282,20 @@ export default function Ecrire({ onSave, setEcran, langue }) {
         padding: '16px 0', marginBottom: '12px'
       }}>
         <div>
-          <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent)', letterSpacing: '0.1em' }}>
+          <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: '2px' }}>
             {langue === 'en' ? 'WRITE' : 'ÉCRITURE'}
           </p>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            {new Date().toLocaleDateString(langue === 'en' ? 'en-GB' : 'fr-FR', {
-              weekday: 'long', day: 'numeric', month: 'long'
-            })}
-          </p>
+          <input
+            type="datetime-local"
+            value={dateSelectionnee}
+            onChange={(e) => setDateSelectionnee(e.target.value)}
+            style={{
+              fontSize: '13px', color: 'var(--text-muted)',
+              background: 'transparent', border: 'none',
+              outline: 'none', fontFamily: 'inherit',
+              padding: 0, cursor: 'pointer', fontWeight: '500'
+            }}
+          />
         </div>
         <button onClick={sauvegarder} disabled={!contenu} style={{
           background: contenu ? 'var(--accent)' : 'var(--border)',
