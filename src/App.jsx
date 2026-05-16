@@ -308,6 +308,7 @@ export default function App() {
           onClose={() => setWrappedVisible(false)}
         />
       )}
+      <SpeedInsights />
     </div>
   )
 }
