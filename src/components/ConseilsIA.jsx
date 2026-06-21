@@ -3,7 +3,7 @@ import { db } from '../firebase'
 import { collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore'
 import { traductions } from '../i18n'
 
-export default function ConseilsIA({ entrees, langue, utilisateur }) {
+export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, setContexteIA }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [chargement, setChargement] = useState(false)
@@ -57,57 +57,25 @@ export default function ConseilsIA({ entrees, langue, utilisateur }) {
   // Message d'accueil
   useEffect(() => {
     if (!initialise) {
-      const initChat = async () => {
-        const aujourdhui = new Date().toDateString()
-        const entreesDuJour = entrees.filter(e => new Date(e.id).toDateString() === aujourdhui)
-        const derniereEntree = entreesDuJour.length > 0 ? entreesDuJour[0] : null
+      let msgAccueil
 
-        if (derniereEntree && derniereEntree.contenu) {
-          setChargement(true)
-          try {
-            const res = await fetch('/api/assistant', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'intro_jour',
-                entreeDuJour: derniereEntree.contenu,
-                langue
-              })
-            })
-            const data = await res.json()
-            if (data.texte) {
-              setMessages([{ role: 'assistant', content: data.texte }])
-            } else {
-              throw new Error('Pas de texte')
-            }
-          } catch (e) {
-            console.error('Erreur intro IA:', e)
-            // fallback
-            const heure = new Date().getHours()
-            let salutation = 'Bonsoir'
-            if (heure < 12) salutation = 'Bonjour'
-            else if (heure < 18) salutation = 'Bon après-midi'
-            setMessages([{ role: 'assistant', content: `${salutation} 🙏 Je suis là pour t'accompagner. Tu peux me parler de ce que tu vis, de tes questions, de tes luttes — je suis là.` }])
-          }
-          setChargement(false)
-        } else {
-          const heure = new Date().getHours()
-          let salutation = 'Bonsoir'
-          if (heure < 12) salutation = 'Bonjour'
-          else if (heure < 18) salutation = 'Bon après-midi'
-
-          const msgAccueil = entrees.length > 0
-            ? `${salutation} 🙏 Je suis là pour t'accompagner. Tu peux me parler de ce que tu vis, de tes questions, de tes luttes — je suis là.`
-            : `${salutation} 🙏 Je suis là pour t'accompagner spirituellement. De quoi veux-tu parler aujourd'hui ?`
-
-          setMessages([{ role: 'assistant', content: msgAccueil }])
-        }
-        setInitialise(true)
+      if (contexteIA?.type === 'planning') {
+        msgAccueil = '💬 Parlons de ton planning. Comment tu veux t\'organiser ?'
+      } else {
+        const heure = new Date().getHours()
+        let salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir'
+        msgAccueil = entrees.length > 0
+          ? `${salutation} 🙏 Je suis là pour t'accompagner. Tu peux me parler de ce que tu vis, de tes questions, de tes luttes — je suis là.`
+          : `${salutation} 🙏 Je suis là pour t'accompagner spirituellement. De quoi veux-tu parler aujourd'hui ?`
       }
 
-      initChat()
+      setMessages([{ role: 'assistant', content: msgAccueil }])
+      setInitialise(true)
+
+      // Nettoyer le contexte après utilisation
+      if (contexteIA) setContexteIA(null)
     }
-  }, [initialise, entrees, langue])
+  }, [initialise, entrees, contexteIA])
 
   const getEntreesRecentes = () => {
     const il7jours = new Date()
@@ -169,6 +137,10 @@ export default function ConseilsIA({ entrees, langue, utilisateur }) {
     try {
       const messagesAAEnvoyer = nouvelHistorique
 
+      const contexteSupplementaire = contexteIA?.type === 'planning'
+        ? `\n\nCONTEXTE PLANNING : ${contexteIA.message}`
+        : ''
+
       const res = await fetch('/api/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -176,7 +148,7 @@ export default function ConseilsIA({ entrees, langue, utilisateur }) {
           type: 'chat',
           messages: messagesAAEnvoyer,
           lectures,
-          entreeSemaine: getEntreesRecentes() + getMemoireFormatee(),
+          entreeSemaine: getEntreesRecentes() + getMemoireFormatee() + contexteSupplementaire,
           langue
         })
       })

@@ -6,6 +6,27 @@ export default function Entrees({ entrees, onUpdate, onDelete }) {
   const [editContenu, setEditContenu] = useState('')
   const [editTitre, setEditTitre] = useState('')
 
+  const calculerStreak = () => {
+    if (entrees.length === 0) return 0
+    let streak = 0
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    for (let i = 0; i < 30; i++) {
+      const jour = new Date(today)
+      jour.setDate(today.getDate() - i)
+      const aEcrit = entrees.some(e => {
+        const d = new Date(e.id)
+        d.setHours(0, 0, 0, 0)
+        return d.getTime() === jour.getTime()
+      })
+      if (aEcrit) streak++
+      else if (i > 0) break
+    }
+    return streak
+  }
+
+  const totalMots = entrees.reduce((acc, e) => acc + (e.mots || 0), 0)
+
   const ouvrirEntree = (entree) => {
     setSelected(entree)
     setEditing(false)
@@ -55,6 +76,27 @@ export default function Entrees({ entrees, onUpdate, onDelete }) {
   return (
     <div className="ecran">
       <h2>Mes entrées ({entrees.length})</h2>
+
+      <div style={{
+        background: 'var(--bg-card)', border: '1px solid var(--border)',
+        borderRadius: '20px', padding: '16px', marginBottom: '16px',
+        display: 'flex', gap: '0'
+      }}>
+        {[
+          { icon: '🔥', val: calculerStreak(), label: 'JOURS DE SUITE' },
+          { icon: '📝', val: totalMots, label: 'MOTS ÉCRITS' },
+          { icon: '↗', val: entrees.length, label: 'ENTRÉES' }
+        ].map((s, i) => (
+          <div key={i} style={{
+            flex: 1, textAlign: 'center',
+            borderRight: i < 2 ? '1px solid var(--border)' : 'none',
+            padding: '8px'
+          }}>
+            <p style={{ fontSize: '18px', fontWeight: '800', color: 'var(--accent)' }}>{s.icon} {s.val}</p>
+            <p style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.08em' }}>{s.label}</p>
+          </div>
+        ))}
+      </div>
 
       {/* LISTE */}
       {!selected && (

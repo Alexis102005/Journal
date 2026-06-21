@@ -19,12 +19,13 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(window.location.hash === '#admin')
   const [entrees, setEntrees] = useState([])
   const [chargement, setChargement] = useState(true)
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
   const [utilisateur, setUtilisateur] = useState(null)
   const [authChargement, setAuthChargement] = useState(true)
   const [wrappedData, setWrappedData] = useState(null)
   const [wrappedPeriode, setWrappedPeriode] = useState('')
   const [wrappedVisible, setWrappedVisible] = useState(false)
+  const [contexteIA, setContexteIA] = useState(null)
 
   const t = traductions[langue] || traductions.fr
 
@@ -222,12 +223,22 @@ export default function App() {
             setTheme={setTheme}
             setEcran={setEcran}
             onOuvrirWrapped={ouvrirWrapped}
+            utilisateur={utilisateur}
+            setContexteIA={setContexteIA}
           />
         )}
         {ecran === 'ecrire' && <Ecrire onSave={ajouterEntree} setEcran={setEcran} langue={langue} />}
         {ecran === 'entrees' && <Entrees entrees={entrees} onUpdate={mettreAJourEntree} onDelete={supprimerEntree} />}
         {ecran === 'parole' && <Parole langue={langue} isAdmin={isAdmin} />}
-        {ecran === 'conseils' && <ConseilsIA entrees={entrees} langue={langue} utilisateur={utilisateur} />}
+        {ecran === 'conseils' && (
+          <ConseilsIA
+            entrees={entrees}
+            langue={langue}
+            utilisateur={utilisateur}
+            contexteIA={contexteIA}
+            setContexteIA={setContexteIA}
+          />
+        )}
         {ecran === 'parametres' && (
           <Parametres
             langue={langue}
@@ -242,19 +253,44 @@ export default function App() {
 
       <nav className="nav-bar">
         <button onClick={() => setEcran('accueil')} className={ecran === 'accueil' ? 'actif' : ''}>
-          🏠<span>{t.accueil}</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          </svg>
+          <span>{t.accueil}</span>
         </button>
+
         <button onClick={() => setEcran('parole')} className={ecran === 'parole' ? 'actif' : ''}>
-          📖<span>{t.parole}</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+          <span>{t.parole}</span>
         </button>
+
         <button onClick={() => setEcran('conseils')} className={`nav-fab ${ecran === 'conseils' ? 'actif' : ''}`}>
-          ✨
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            <circle cx="12" cy="12" r="2.5" fill="white" stroke="none"/>
+          </svg>
+          <span>ELIA</span>
         </button>
+
         <button onClick={() => setEcran('ecrire')} className={ecran === 'ecrire' ? 'actif' : ''}>
-          ✏️<span>{t.ecrire}</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <span>{t.ecrire}</span>
         </button>
+
         <button onClick={() => setEcran('entrees')} className={ecran === 'entrees' ? 'actif' : ''}>
-          📓<span>{t.entrees}</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span>{t.entrees}</span>
         </button>
       </nav>
       {wrappedVisible && wrappedData && (

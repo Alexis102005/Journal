@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { traductions } from '../i18n'
+import Objectifs from './objectif'
 
-export default function Accueil({ entrees, langue, setEcran, onOuvrirWrapped }) {
+export default function Accueil({ entrees, langue, setEcran, onOuvrirWrapped, utilisateur, setContexteIA }) {
   const [liturgie, setLiturgie] = useState(null)
   const [chargement, setChargement] = useState(true)
   const [priere, setPriere] = useState('')
@@ -155,89 +156,6 @@ export default function Accueil({ entrees, langue, setEcran, onOuvrirWrapped }) 
         </button>
       </div>
 
-      {/* Stats compactes */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-        {[
-          { icon: '🔥', val: calculerStreak(), label: t.streak, bg: 'var(--streak-bg)', color: 'var(--streak-color)', border: 'rgba(255,200,80,0.25)' },
-          { icon: '📝', val: totalMots, label: t.motsEcrits, bg: 'var(--mots-bg)', color: 'var(--mots-color)', border: 'rgba(80,160,255,0.2)' },
-          { icon: '📓', val: entrees.length, label: 'entrées', bg: 'var(--accent-light)', color: 'var(--accent)', border: 'var(--border-subtle)' },
-        ].map(s => (
-          <div key={s.label} style={{
-            flex: 1, background: s.bg,
-            backdropFilter: 'var(--blur)', WebkitBackdropFilter: 'var(--blur)',
-            border: `1px solid ${s.border}`,
-            borderRadius: '16px', padding: '12px 8px', textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '16px', marginBottom: '2px' }}>{s.icon}</div>
-            <div style={{ fontSize: '20px', fontWeight: '800', color: s.color, lineHeight: 1 }}>{s.val}</div>
-            <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: '600', letterSpacing: '0.05em' }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Prières */}
-      <div className="card" style={{ marginBottom: '12px' }}>
-        <p className="section-label">🙏 Prière du jour</p>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: priere ? '12px' : '0' }}>
-          {boutonsPriere.map(btn => (
-            <button
-              key={btn.type}
-              onClick={() => btn.actif && demanderPriere(btn.type)}
-              disabled={priereChargement || !btn.actif}
-              style={{
-                flex: 1, padding: '14px 8px', borderRadius: '14px',
-                border: `1px solid ${btn.actif ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                background: btn.actif ? 'var(--accent-light)' : 'transparent',
-                color: btn.actif ? 'var(--accent)' : 'var(--text-muted)',
-                cursor: btn.actif && !priereChargement ? 'pointer' : 'not-allowed',
-                opacity: btn.actif ? 1 : 0.4,
-                fontSize: '13px', fontWeight: btn.actif ? '700' : '500',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                transition: 'all 0.15s'
-              }}
-            >
-              <span style={{ fontSize: '22px' }}>{btn.icon}</span>
-              {btn.label}
-              {btn.type === 'soir' && estSoir && !aEcritAujourdhui && (
-                <span style={{ fontSize: '9px', opacity: 0.7 }}>Écris d'abord</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {priereChargement && (
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontStyle: 'italic', textAlign: 'center', padding: '8px' }}>
-            ✨ Génération en cours...
-          </p>
-        )}
-
-        {priere && !priereChargement && (
-          <div style={{
-            background: 'var(--accent-light)', border: '1px solid var(--border-subtle)',
-            borderRadius: '14px', padding: '16px', position: 'relative'
-          }}>
-            <p style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', marginBottom: '10px', letterSpacing: '0.08em' }}>
-              {typePriere === 'matin' ? '🌅 PRIÈRE DU MATIN' : '🌙 PRIÈRE DU SOIR'}
-            </p>
-            <p style={{ fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.9', fontStyle: 'italic' }}>
-              {priere}
-            </p>
-            <button onClick={() => setPriere('')} style={{
-              position: 'absolute', top: '10px', right: '10px',
-              background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '16px'
-            }}>✕</button>
-          </div>
-        )}
-      </div>
-
-      {/* Zone objectifs — placeholder pour la to-do list */}
-      <div className="card" style={{ marginBottom: '12px', minHeight: '80px' }}>
-        <p className="section-label">🎯 Objectifs du jour</p>
-        <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '16px 0', fontStyle: 'italic' }}>
-          Bientôt — tes objectifs quotidiens ici
-        </p>
-      </div>
-
       {/* Verset du jour */}
       <div
         onClick={() => setEcran('parole')}
@@ -245,7 +163,7 @@ export default function Accueil({ entrees, langue, setEcran, onOuvrirWrapped }) 
           background: 'var(--card-verse)',
           backdropFilter: 'var(--blur)', WebkitBackdropFilter: 'var(--blur)',
           borderRadius: '20px', padding: '24px 22px',
-          marginBottom: '16px', cursor: 'pointer',
+          marginBottom: '20px', cursor: 'pointer',
           border: '1px solid rgba(255,255,255,0.1)'
         }}
       >
@@ -259,6 +177,8 @@ export default function Accueil({ entrees, langue, setEcran, onOuvrirWrapped }) 
           {liturgie?.ref} →
         </p>
       </div>
+
+      <Objectifs utilisateur={utilisateur} setEcran={setEcran} setContexteIA={setContexteIA} />
 
       {/* Bouton Wrapped */}
       {afficherWrapped && (
