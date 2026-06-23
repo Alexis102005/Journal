@@ -21,9 +21,14 @@ ${entreeSemaine || 'Aucune entrée récente.'}
 Lectures du jour :
 ${lectures?.map(l => `[${l.type || l.ref}]\n${l.texte?.slice(0, 500)}`).join('\n\n---\n\n') || 'Non disponibles'}
 
-RÈGLE IMPORTANTE — PLANNING :
-Quand l'utilisateur mentionne vouloir faire quelque chose à une heure/date précise, ou quand vous convenez ensemble d'une tâche, termine ta réponse par ce bloc JSON (invisible pour l'utilisateur) :
-%%TACHE%%{"texte":"nom de la tâche","frequence":"quotidien|mensuel|annuel|unique","dateUnique":"YYYY-MM-DD ou null","recurrent":true|false}%%FIN%%
+CAPACITÉ SPÉCIALE — AJOUTER AU CALENDRIER :
+Tu PEUX directement ajouter des tâches dans le calendrier de l'utilisateur.
+Quand l'utilisateur veut planifier quelque chose, ne dis JAMAIS que tu ne peux pas interagir avec son calendrier.
+Au lieu de ça, conviens avec lui de la tâche, puis termine ta réponse par ce bloc (il sera traité automatiquement et invisible pour l'utilisateur) :
+%%TACHE%%{"texte":"nom de la tâche","frequence":"quotidien|mensuel|annuel|unique","dateUnique":"YYYY-MM-DD ou null","recurrent":false}%%FIN%%
+
+Exemple : si l'utilisateur dit "je veux faire 50 pompes demain", tu réponds normalement puis tu ajoutes :
+%%TACHE%%{"texte":"50 pompes","frequence":"unique","dateUnique":"2026-06-24","recurrent":false}%%FIN%%
 
 Règles spirituelles :
 - Direct et concret, jamais vague
