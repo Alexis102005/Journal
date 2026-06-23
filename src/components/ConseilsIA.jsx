@@ -96,6 +96,28 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
     chargerMemoire()
   }, [utilisateur])
 
+  // Charger l'historique au montage
+  useEffect(() => {
+    if (!utilisateur || messagesChat.length > 0) return
+    const charger = async () => {
+      try {
+        const ref = doc(db, 'conversations', utilisateur.uid)
+        const snap = await getDoc(ref)
+        if (snap.exists() && snap.data().messages?.length > 0) {
+          setMessagesChat(snap.data().messages)
+        } else {
+          // Message d'accueil si aucun historique
+          const heure = new Date().getHours()
+          const salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir'
+          setMessagesChat([{ role: 'assistant', content: `${salutation} 🙏 Je suis là pour t'accompagner. Tu peux me parler de ce que tu vis, de tes questions, de tes luttes — je suis là.` }])
+        }
+      } catch(e) {
+        console.error(e)
+      }
+    }
+    charger()
+  }, [utilisateur])
+
   // Scroll automatique
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -142,6 +164,19 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
     if (memoire.length === 0) return ''
     return '\n\nCe que tu sais déjà sur cette personne (mémoire des conversations passées) :\n' +
       memoire.map(f => `- [${f.type}] ${f.contenu}`).join('\n')
+  }
+
+  // Sauvegarder la conversation complète
+  const sauvegarderConversation = async (messages) => {
+    if (!utilisateur) return
+    try {
+      await setDoc(doc(db, 'conversations', utilisateur.uid), {
+        messages: messages.slice(-50), // garder les 50 derniers messages
+        updatedAt: new Date().toISOString()
+      })
+    } catch(e) {
+      console.error(e)
+    }
   }
 
   // Sauvegarder un message dans Firebase
@@ -257,6 +292,7 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
       const msgAssistant = { role: 'assistant', content: texteVisible }
       const nouvelHistoriqueComplet = [...nouvelHistorique, msgAssistant]
       setMessagesChat(nouvelHistoriqueComplet)
+      sauvegarderConversation(nouvelHistoriqueComplet)
 
       // Sauvegarder le message assistant
       await sauvegarderMessage(msgAssistant)
@@ -267,10 +303,12 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
           const { ajouterTache } = await import('../services/objectifs')
           await ajouterTache(utilisateur.uid, tacheDetectee)
           // Notifier l'utilisateur
-          setMessagesChat(prev => [...prev, {
+          const notificationMsg = {
             role: 'assistant',
             content: `✅ J'ai ajouté "${tacheDetectee.texte}" à tes objectifs.`
-          }])
+          }
+          setMessagesChat(prev => [...prev, notificationMsg])
+          sauvegarderConversation([...nouvelHistoriqueComplet, notificationMsg])
         } catch(e) {
           console.error('Erreur ajout tâche:', e)
         }
@@ -284,7 +322,9 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
 
     } catch (e) {
       const msgErreur = { role: 'assistant', content: 'Une erreur est survenue, réessaie.' }
-      setMessagesChat(prev => [...prev, msgErreur])
+      const historiqueAvecErreur = [...messagesChat, msgErreur]
+      setMessagesChat(historiqueAvecErreur)
+      sauvegarderConversation(historiqueAvecErreur)
       await sauvegarderMessage(msgErreur)
     }
 
