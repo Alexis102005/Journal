@@ -272,6 +272,28 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
       const data = await res.json()
       let texteVisible = data.texte || ''
       let tacheDetectee = null
+      const data = await res.json()
+let texteVisible = data.texte || ''
+let tacheDetectee = null
+
+// ← AJOUTE ICI
+console.log('RÉPONSE COMPLÈTE:', texteVisible)
+
+const regexTache = /%%TACHE%%(.+?)%%FIN%%/s
+const match = texteVisible.match(regexTache)
+
+// ← AJOUTE ICI
+console.log('MATCH:', match)
+
+if (match) {
+  try {
+    tacheDetectee = JSON.parse(match[1])
+    // ← AJOUTE ICI
+    console.log('TÂCHE PARSÉE:', tacheDetectee)
+  } catch(e) {
+    console.error('Erreur parsing tâche:', e)
+  }
+}
 
       // Extraire la tâche cachée si présente
       const regexTache = /%%TACHE%%(.+?)%%FIN%%/s
