@@ -26,6 +26,7 @@ export default function App() {
   const [wrappedPeriode, setWrappedPeriode] = useState('')
   const [wrappedVisible, setWrappedVisible] = useState(false)
   const [contexteIA, setContexteIA] = useState(null)
+  const [messagesChat, setMessagesChat] = useState([])
 
   const t = traductions[langue] || traductions.fr
 
@@ -237,6 +238,8 @@ export default function App() {
             utilisateur={utilisateur}
             contexteIA={contexteIA}
             setContexteIA={setContexteIA}
+            messagesChat={messagesChat}
+            setMessagesChat={setMessagesChat}
           />
         )}
         {ecran === 'parametres' && (

@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { db } from '../firebase'
-import { collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore'
+import { collection, getDocs, addDoc, query, orderBy, limit, doc, setDoc, getDoc } from 'firebase/firestore'
 import { traductions } from '../i18n'
 
-export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, setContexteIA }) {
-  const [messages, setMessages] = useState([])
+export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, setContexteIA, messagesChat, setMessagesChat }) {
   const [input, setInput] = useState('')
   const [chargement, setChargement] = useState(false)
   const [lectures, setLectures] = useState([])
   const [memoire, setMemoire] = useState([])
   const [initialise, setInitialise] = useState(false)
+  const [conversationId, setConversationId] = useState(null)
+  const [typeConversation, setTypeConversation] = useState('general')
+  const [historiqueCharge, setHistoriqueCharge] = useState(false)
   const bottomRef = useRef(null)
   const t = traductions[langue] || traductions.fr
 
@@ -28,6 +30,51 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
       })
       .catch(() => { })
   }, [])
+
+  // Créer une nouvelle conversation au démarrage
+  useEffect(() => {
+    if (!utilisateur) return
+
+    const creerConversation = async () => {
+      const newConvId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      const typeConv = contexteIA?.type === 'planning' ? 'planning' : 'general'
+
+      // Créer le document conversation
+      await setDoc(doc(db, 'users', utilisateur.uid, 'conversations', newConvId), {
+        type: typeConv,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
+
+      setConversationId(newConvId)
+      setTypeConversation(typeConv)
+      setHistoriqueCharge(true)
+    }
+
+    creerConversation()
+  }, [utilisateur])
+
+  // Charger l'historique des conversations précédentes
+  useEffect(() => {
+    if (!utilisateur || historiqueCharge) return
+
+    const chargerHistorique = async () => {
+      try {
+        const q = query(
+          collection(db, 'users', utilisateur.uid, 'conversations'),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        )
+        const snapshot = await getDocs(q)
+        // Chargé mais non affiché - disponible pour référence/contexte futur
+        console.log(`${snapshot.docs.length} conversations chargées depuis Firebase`)
+      } catch (e) {
+        console.error('Erreur chargement historique:', e)
+      }
+    }
+
+    chargerHistorique()
+  }, [utilisateur, historiqueCharge])
 
   // Charger la mémoire depuis Firestore
   useEffect(() => {
@@ -52,14 +99,14 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
   // Scroll automatique
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, chargement])
+  }, [messagesChat, chargement])
 
   // Message d'accueil
   useEffect(() => {
-    if (!initialise) {
+    if (!initialise && conversationId) {
       let msgAccueil
 
-      if (contexteIA?.type === 'planning') {
+      if (typeConversation === 'planning') {
         msgAccueil = '💬 Parlons de ton planning. Comment tu veux t\'organiser ?'
       } else {
         const heure = new Date().getHours()
@@ -69,13 +116,18 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
           : `${salutation} 🙏 Je suis là pour t'accompagner spirituellement. De quoi veux-tu parler aujourd'hui ?`
       }
 
-      setMessages([{ role: 'assistant', content: msgAccueil }])
+      const nouveauMsg = { role: 'assistant', content: msgAccueil }
+      setMessagesChat([nouveauMsg])
+      
+      // Sauvegarder le message d'accueil dans Firebase
+      sauvegarderMessage(nouveauMsg)
+      
       setInitialise(true)
 
       // Nettoyer le contexte après utilisation
       if (contexteIA) setContexteIA(null)
     }
-  }, [initialise, entrees, contexteIA])
+  }, [initialise, conversationId, typeConversation, entrees, contexteIA])
 
   const getEntreesRecentes = () => {
     const il7jours = new Date()
@@ -90,6 +142,36 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
     if (memoire.length === 0) return ''
     return '\n\nCe que tu sais déjà sur cette personne (mémoire des conversations passées) :\n' +
       memoire.map(f => `- [${f.type}] ${f.contenu}`).join('\n')
+  }
+
+  // Sauvegarder un message dans Firebase
+  const sauvegarderMessage = async (message) => {
+    if (!utilisateur || !conversationId) return
+
+    try {
+      const messagesRef = collection(
+        db,
+        'users',
+        utilisateur.uid,
+        'conversations',
+        conversationId,
+        'messages'
+      )
+      await addDoc(messagesRef, {
+        role: message.role,
+        content: message.content,
+        timestamp: new Date().toISOString()
+      })
+
+      // Mettre à jour le timestamp de la conversation
+      await setDoc(
+        doc(db, 'users', utilisateur.uid, 'conversations', conversationId),
+        { updatedAt: new Date().toISOString() },
+        { merge: true }
+      )
+    } catch (e) {
+      console.error('Erreur sauvegarde message:', e)
+    }
   }
 
   // Extraire et sauvegarder la mémoire après la conversation
@@ -129,16 +211,19 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
     if (!input.trim() || chargement) return
 
     const nouveauMessage = { role: 'user', content: input.trim() }
-    const nouvelHistorique = [...messages, nouveauMessage]
-    setMessages(nouvelHistorique)
+    const nouvelHistorique = [...messagesChat, nouveauMessage]
+    setMessagesChat(nouvelHistorique)
     setInput('')
     setChargement(true)
+
+    // Sauvegarder le message utilisateur
+    await sauvegarderMessage(nouveauMessage)
 
     try {
       const messagesAAEnvoyer = nouvelHistorique
 
-      const contexteSupplementaire = contexteIA?.type === 'planning'
-        ? `\n\nCONTEXTE PLANNING : ${contexteIA.message}`
+      const contexteSupplementaire = typeConversation === 'planning'
+        ? `\n\nCONTEXTE PLANNING : ${contexteIA?.message || 'Planifier pour demain'}`
         : ''
 
       const res = await fetch('/api/assistant', {
@@ -154,8 +239,42 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
       })
 
       const data = await res.json()
-      const nouvelHistoriqueComplet = [...nouvelHistorique, { role: 'assistant', content: data.texte }]
-      setMessages(nouvelHistoriqueComplet)
+      let texteVisible = data.texte || ''
+      let tacheDetectee = null
+
+      // Extraire la tâche cachée si présente
+      const regexTache = /%%TACHE%%(.+?)%%FIN%%/s
+      const match = texteVisible.match(regexTache)
+      if (match) {
+        try {
+          tacheDetectee = JSON.parse(match[1])
+          texteVisible = texteVisible.replace(regexTache, '').trim()
+        } catch(e) {
+          console.error('Erreur parsing tâche:', e)
+        }
+      }
+
+      const msgAssistant = { role: 'assistant', content: texteVisible }
+      const nouvelHistoriqueComplet = [...nouvelHistorique, msgAssistant]
+      setMessagesChat(nouvelHistoriqueComplet)
+
+      // Sauvegarder le message assistant
+      await sauvegarderMessage(msgAssistant)
+
+      // Sauvegarder la tâche dans Firestore si détectée
+      if (tacheDetectee && utilisateur) {
+        try {
+          const { ajouterTache } = await import('../services/objectifs')
+          await ajouterTache(utilisateur.uid, tacheDetectee)
+          // Notifier l'utilisateur
+          setMessagesChat(prev => [...prev, {
+            role: 'assistant',
+            content: `✅ J'ai ajouté "${tacheDetectee.texte}" à tes objectifs.`
+          }])
+        } catch(e) {
+          console.error('Erreur ajout tâche:', e)
+        }
+      }
 
       // Extraire la mémoire tous les 3 messages utilisateur
       const nbMessagesUser = nouvelHistoriqueComplet.filter(m => m.role === 'user').length
@@ -164,7 +283,9 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
       }
 
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Une erreur est survenue, réessaie.' }])
+      const msgErreur = { role: 'assistant', content: 'Une erreur est survenue, réessaie.' }
+      setMessagesChat(prev => [...prev, msgErreur])
+      await sauvegarderMessage(msgErreur)
     }
 
     setChargement(false)
@@ -197,7 +318,7 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
         flex: 1, overflowY: 'auto', padding: '16px 20px',
         display: 'flex', flexDirection: 'column', gap: '12px'
       }}>
-        {messages.map((msg, i) => (
+        {messagesChat.map((msg, i) => (
           <div key={i} style={{
             display: 'flex',
             justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
