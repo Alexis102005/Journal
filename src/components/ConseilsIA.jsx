@@ -10,11 +10,9 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
   const [memoire, setMemoire] = useState([])
   const [conversationId, setConversationId] = useState(null)
   const [typeConversation, setTypeConversation] = useState('general')
-  const [historiqueCharge, setHistoriqueCharge] = useState(false)
   const bottomRef = useRef(null)
   const t = traductions[langue] || traductions.fr
 
-  // Charger les lectures du jour
   useEffect(() => {
     fetch('/api/liturgie')
       .then(res => res.json())
@@ -27,116 +25,48 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
         })).filter(l => l.texte.length > 0)
         setLectures(lecturesFormatees)
       })
-      .catch(() => { })
+      .catch(() => {})
   }, [])
 
-  // Créer une nouvelle conversation au démarrage
   useEffect(() => {
     if (!utilisateur) return
-
-    const creerConversation = async () => {
+    const init = async () => {
       const newConvId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       const typeConv = contexteIA?.type === 'planning' ? 'planning' : 'general'
-
-      // Créer le document conversation
       await setDoc(doc(db, 'users', utilisateur.uid, 'conversations', newConvId), {
         type: typeConv,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })
-
       setConversationId(newConvId)
       setTypeConversation(typeConv)
-      setHistoriqueCharge(true)
     }
-
-    creerConversation()
+    init()
   }, [utilisateur])
 
-  // Charger l'historique des conversations précédentes
-  useEffect(() => {
-    if (!utilisateur || historiqueCharge) return
-
-    const chargerHistorique = async () => {
-      try {
-        const q = query(
-          collection(db, 'users', utilisateur.uid, 'conversations'),
-          orderBy('createdAt', 'desc'),
-          limit(50)
-        )
-        const snapshot = await getDocs(q)
-        // Chargé mais non affiché - disponible pour référence/contexte futur
-        console.log(`${snapshot.docs.length} conversations chargées depuis Firebase`)
-      } catch (e) {
-        console.error('Erreur chargement historique:', e)
-      }
-    }
-
-    chargerHistorique()
-  }, [utilisateur, historiqueCharge])
-
-  // Charger la mémoire depuis Firestore
   useEffect(() => {
     if (!utilisateur) return
     const chargerMemoire = async () => {
       try {
-        const q = query(
-          collection(db, 'memoire', utilisateur.uid, 'faits'),
-          orderBy('date', 'desc'),
-          limit(20)
-        )
+        const q = query(collection(db, 'memoire', utilisateur.uid, 'faits'), orderBy('date', 'desc'), limit(20))
         const snapshot = await getDocs(q)
-        const faits = snapshot.docs.map(d => d.data())
-        setMemoire(faits)
-      } catch (e) {
-        console.error('Erreur chargement mémoire:', e)
-      }
+        setMemoire(snapshot.docs.map(d => d.data()))
+      } catch(e) { console.error(e) }
     }
     chargerMemoire()
   }, [utilisateur])
 
-  // Charger l'historique au montage
   useEffect(() => {
     if (!utilisateur || messagesChat.length > 0) return
     const charger = async () => {
       try {
-        const ref = doc(db, 'conversations', utilisateur.uid)
-        const snap = await getDoc(ref)
+        const snap = await getDoc(doc(db, 'conversations', utilisateur.uid))
         if (snap.exists() && snap.data().messages?.length > 0) {
           setMessagesChat(snap.data().messages)
         } else {
-          // Message d'accueil si aucun historique
           const heure = new Date().getHours()
           const salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir'
           setMessagesChat([{ role: 'assistant', content: `${salutation} 🙏 Je suis là pour t'accompagner. Tu peux me parler de ce que tu vis, de tes questions, de tes luttes — je suis là.` }])
-        }
-      } catch(e) {
-        console.error(e)
-      }
-    }
-    charger()
-  }, [utilisateur])
-
-  // Scroll automatique
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messagesChat, chargement])
-
-  // Charger l'historique et initialiser les messages
-  useEffect(() => {
-    if (!utilisateur) return
-    if (messagesChat.length > 0) return // déjà des messages, on ne réinitialise pas
-
-    const charger = async () => {
-      try {
-        const ref = doc(db, 'conversations', utilisateur.uid)
-        const snap = await getDoc(ref)
-        if (snap.exists() && snap.data().messages?.length > 0) {
-          setMessagesChat(snap.data().messages)
-        } else {
-          const heure = new Date().getHours()
-          const salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir'
-          setMessagesChat([{ role: 'assistant', content: `${salutation} 🙏 Je suis là pour t'accompagner.` }])
         }
       } catch(e) {
         const heure = new Date().getHours()
@@ -146,6 +76,10 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
     }
     charger()
   }, [utilisateur])
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messagesChat, chargement])
 
   const getEntreesRecentes = () => {
     const il7jours = new Date()
@@ -158,84 +92,48 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
 
   const getMemoireFormatee = () => {
     if (memoire.length === 0) return ''
-    return '\n\nCe que tu sais déjà sur cette personne (mémoire des conversations passées) :\n' +
+    return '\n\nCe que tu sais déjà sur cette personne :\n' +
       memoire.map(f => `- [${f.type}] ${f.contenu}`).join('\n')
   }
 
-  // Sauvegarder la conversation complète
   const sauvegarderConversation = async (messages) => {
     if (!utilisateur) return
     try {
       await setDoc(doc(db, 'conversations', utilisateur.uid), {
-        messages: messages.slice(-50), // garder les 50 derniers messages
+        messages: messages.slice(-50),
         updatedAt: new Date().toISOString()
       })
-    } catch(e) {
-      console.error(e)
-    }
+    } catch(e) { console.error(e) }
   }
 
-  // Sauvegarder un message dans Firebase
   const sauvegarderMessage = async (message) => {
     if (!utilisateur || !conversationId) return
-
     try {
-      const messagesRef = collection(
-        db,
-        'users',
-        utilisateur.uid,
-        'conversations',
-        conversationId,
-        'messages'
-      )
-      await addDoc(messagesRef, {
+      await addDoc(collection(db, 'users', utilisateur.uid, 'conversations', conversationId, 'messages'), {
         role: message.role,
         content: message.content,
         timestamp: new Date().toISOString()
       })
-
-      // Mettre à jour le timestamp de la conversation
-      await setDoc(
-        doc(db, 'users', utilisateur.uid, 'conversations', conversationId),
-        { updatedAt: new Date().toISOString() },
-        { merge: true }
-      )
-    } catch (e) {
-      console.error('Erreur sauvegarde message:', e)
-    }
+      await setDoc(doc(db, 'users', utilisateur.uid, 'conversations', conversationId), { updatedAt: new Date().toISOString() }, { merge: true })
+    } catch(e) { console.error(e) }
   }
 
-  // Extraire et sauvegarder la mémoire après la conversation
   const extraireMemoire = async (historique) => {
-    const messagesSignificatifs = historique.filter(m => m.role === 'user')
-    if (messagesSignificatifs.length < 2) return // Pas assez de contenu
-
+    if (historique.filter(m => m.role === 'user').length < 2) return
     try {
       const res = await fetch('/api/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'extraire_memoire',
-          historique
-        })
+        body: JSON.stringify({ type: 'extraire_memoire', historique })
       })
       const data = await res.json()
-      if (!data.faits || data.faits.length === 0) return
-
-      // Sauvegarder chaque fait dans Firestore
+      if (!data.faits?.length) return
       const ref = collection(db, 'memoire', utilisateur.uid, 'faits')
       for (const fait of data.faits) {
-        await addDoc(ref, {
-          ...fait,
-          date: new Date().toISOString()
-        })
+        await addDoc(ref, { ...fait, date: new Date().toISOString() })
       }
-
-      // Mettre à jour la mémoire locale
       setMemoire(prev => [...data.faits.map(f => ({ ...f, date: new Date().toISOString() })), ...prev])
-    } catch (e) {
-      console.error('Erreur extraction mémoire:', e)
-    }
+    } catch(e) { console.error(e) }
   }
 
   const envoyerMessage = async () => {
@@ -246,13 +144,9 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
     setMessagesChat(nouvelHistorique)
     setInput('')
     setChargement(true)
-
-    // Sauvegarder le message utilisateur
     await sauvegarderMessage(nouveauMessage)
 
     try {
-      const messagesAAEnvoyer = nouvelHistorique
-
       const contexteSupplementaire = typeConversation === 'planning'
         ? `\n\nCONTEXTE PLANNING : ${contexteIA?.message || 'Planifier pour demain'}`
         : ''
@@ -262,7 +156,7 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'chat',
-          messages: messagesAAEnvoyer,
+          messages: nouvelHistorique,
           lectures,
           entreeSemaine: getEntreesRecentes() + getMemoireFormatee() + contexteSupplementaire,
           langue
@@ -272,30 +166,7 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
       const data = await res.json()
       let texteVisible = data.texte || ''
       let tacheDetectee = null
-      const data = await res.json()
-let texteVisible = data.texte || ''
-let tacheDetectee = null
 
-// ← AJOUTE ICI
-console.log('RÉPONSE COMPLÈTE:', texteVisible)
-
-const regexTache = /%%TACHE%%(.+?)%%FIN%%/s
-const match = texteVisible.match(regexTache)
-
-// ← AJOUTE ICI
-console.log('MATCH:', match)
-
-if (match) {
-  try {
-    tacheDetectee = JSON.parse(match[1])
-    // ← AJOUTE ICI
-    console.log('TÂCHE PARSÉE:', tacheDetectee)
-  } catch(e) {
-    console.error('Erreur parsing tâche:', e)
-  }
-}
-
-      // Extraire la tâche cachée si présente
       const regexTache = /%%TACHE%%(.+?)%%FIN%%/s
       const match = texteVisible.match(regexTache)
       if (match) {
@@ -311,39 +182,26 @@ if (match) {
       const nouvelHistoriqueComplet = [...nouvelHistorique, msgAssistant]
       setMessagesChat(nouvelHistoriqueComplet)
       sauvegarderConversation(nouvelHistoriqueComplet)
-
-      // Sauvegarder le message assistant
       await sauvegarderMessage(msgAssistant)
 
-      // Sauvegarder la tâche dans Firestore si détectée
       if (tacheDetectee && utilisateur) {
         try {
           const { ajouterTache } = await import('../services/objectifs')
           await ajouterTache(utilisateur.uid, tacheDetectee)
-          // Notifier l'utilisateur
-          const notificationMsg = {
-            role: 'assistant',
-            content: `✅ J'ai ajouté "${tacheDetectee.texte}" à tes objectifs.`
-          }
-          setMessagesChat(prev => [...prev, notificationMsg])
-          sauvegarderConversation([...nouvelHistoriqueComplet, notificationMsg])
-        } catch(e) {
-          console.error('Erreur ajout tâche:', e)
-        }
+          const notifMsg = { role: 'assistant', content: `✅ J'ai ajouté "${tacheDetectee.texte}" à tes objectifs.` }
+          setMessagesChat(prev => [...prev, notifMsg])
+          sauvegarderConversation([...nouvelHistoriqueComplet, notifMsg])
+        } catch(e) { console.error('Erreur ajout tâche:', e) }
       }
 
-      // Extraire la mémoire tous les 3 messages utilisateur
-      const nbMessagesUser = nouvelHistoriqueComplet.filter(m => m.role === 'user').length
-      if (nbMessagesUser > 0 && nbMessagesUser % 3 === 0) {
-        extraireMemoire(nouvelHistoriqueComplet)
-      }
+      const nbUser = nouvelHistoriqueComplet.filter(m => m.role === 'user').length
+      if (nbUser > 0 && nbUser % 3 === 0) extraireMemoire(nouvelHistoriqueComplet)
 
-    } catch (e) {
+    } catch(e) {
       const msgErreur = { role: 'assistant', content: 'Une erreur est survenue, réessaie.' }
-      const historiqueAvecErreur = [...messagesChat, msgErreur]
-      setMessagesChat(historiqueAvecErreur)
-      sauvegarderConversation(historiqueAvecErreur)
-      await sauvegarderMessage(msgErreur)
+      const historiqueErreur = [...messagesChat, msgErreur]
+      setMessagesChat(historiqueErreur)
+      sauvegarderConversation(historiqueErreur)
     }
 
     setChargement(false)
@@ -358,29 +216,16 @@ if (match) {
 
   return (
     <div className="ecran" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 0 }}>
-
-      {/* Header */}
-      <div style={{
-        padding: '20px 20px 12px',
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--bg)'
-      }}>
+      <div style={{ padding: '20px 20px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
         <h2 style={{ fontSize: '18px', margin: 0 }}>✨ Accompagnement spirituel</h2>
         <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0' }}>
           {memoire.length > 0 ? `${memoire.length} souvenir${memoire.length > 1 ? 's' : ''} · Parle librement` : 'Parle librement — je suis là'}
         </p>
       </div>
 
-      {/* Zone messages */}
-      <div style={{
-        flex: 1, overflowY: 'auto', padding: '16px 20px',
-        display: 'flex', flexDirection: 'column', gap: '12px'
-      }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {messagesChat.map((msg, i) => (
-          <div key={i} style={{
-            display: 'flex',
-            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
-          }}>
+          <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
             <div style={{
               maxWidth: '80%', padding: '12px 16px',
               borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
@@ -394,24 +239,15 @@ if (match) {
             </div>
           </div>
         ))}
-
         {chargement && (
           <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <div style={{
-              padding: '12px 16px', borderRadius: '18px 18px 18px 4px',
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              fontSize: '20px', letterSpacing: '4px'
-            }}>✦</div>
+            <div style={{ padding: '12px 16px', borderRadius: '18px 18px 18px 4px', background: 'var(--bg-card)', border: '1px solid var(--border)', fontSize: '20px', letterSpacing: '4px' }}>✦</div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Zone input */}
-      <div style={{
-        padding: '12px 16px', borderTop: '1px solid var(--border)',
-        background: 'var(--bg)', display: 'flex', gap: '10px', alignItems: 'flex-end'
-      }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -429,17 +265,14 @@ if (match) {
           onClick={envoyerMessage}
           disabled={!input.trim() || chargement}
           style={{
-            width: '44px', height: '44px', borderRadius: '50%',
-            border: 'none',
+            width: '44px', height: '44px', borderRadius: '50%', border: 'none',
             background: input.trim() && !chargement ? 'var(--accent)' : 'var(--border)',
             color: 'white', fontSize: '18px',
             cursor: input.trim() && !chargement ? 'pointer' : 'not-allowed',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0, transition: 'background 0.2s'
           }}
-        >
-          ↑
-        </button>
+        >↑</button>
       </div>
     </div>
   )
