@@ -8,7 +8,6 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
   const [chargement, setChargement] = useState(false)
   const [lectures, setLectures] = useState([])
   const [memoire, setMemoire] = useState([])
-  const [initialise, setInitialise] = useState(false)
   const [conversationId, setConversationId] = useState(null)
   const [typeConversation, setTypeConversation] = useState('general')
   const [historiqueCharge, setHistoriqueCharge] = useState(false)
@@ -123,33 +122,30 @@ export default function ConseilsIA({ entrees, langue, utilisateur, contexteIA, s
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messagesChat, chargement])
 
-  // Message d'accueil
+  // Charger l'historique et initialiser les messages
   useEffect(() => {
-    if (!initialise && conversationId) {
-      let msgAccueil
+    if (!utilisateur) return
+    if (messagesChat.length > 0) return // déjà des messages, on ne réinitialise pas
 
-      if (typeConversation === 'planning') {
-        msgAccueil = '💬 Parlons de ton planning. Comment tu veux t\'organiser ?'
-      } else {
+    const charger = async () => {
+      try {
+        const ref = doc(db, 'conversations', utilisateur.uid)
+        const snap = await getDoc(ref)
+        if (snap.exists() && snap.data().messages?.length > 0) {
+          setMessagesChat(snap.data().messages)
+        } else {
+          const heure = new Date().getHours()
+          const salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir'
+          setMessagesChat([{ role: 'assistant', content: `${salutation} 🙏 Je suis là pour t'accompagner.` }])
+        }
+      } catch(e) {
         const heure = new Date().getHours()
-        let salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir'
-        msgAccueil = entrees.length > 0
-          ? `${salutation} 🙏 Je suis là pour t'accompagner. Tu peux me parler de ce que tu vis, de tes questions, de tes luttes — je suis là.`
-          : `${salutation} 🙏 Je suis là pour t'accompagner spirituellement. De quoi veux-tu parler aujourd'hui ?`
+        const salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir'
+        setMessagesChat([{ role: 'assistant', content: `${salutation} 🙏 Je suis là pour t'accompagner.` }])
       }
-
-      const nouveauMsg = { role: 'assistant', content: msgAccueil }
-      setMessagesChat([nouveauMsg])
-      
-      // Sauvegarder le message d'accueil dans Firebase
-      sauvegarderMessage(nouveauMsg)
-      
-      setInitialise(true)
-
-      // Nettoyer le contexte après utilisation
-      if (contexteIA) setContexteIA(null)
     }
-  }, [initialise, conversationId, typeConversation, entrees, contexteIA])
+    charger()
+  }, [utilisateur])
 
   const getEntreesRecentes = () => {
     const il7jours = new Date()
