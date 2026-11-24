@@ -22,7 +22,6 @@ Journal est une application de journal intime qui aide à écrire ses réflexion
 - Bilan spirituel périodique (« Wrapped »)
 - Objectifs et planning, avec tâches ponctuelles ou récurrentes
 - Lectures liturgiques du jour et prières contextualisées
-- Transcription audio des entrées
 - Interface en français et en anglais, avec thèmes clair et sombre
 
 ## Technologies
@@ -69,13 +68,35 @@ Ne publiez jamais `GROQ_KEY` ou `ADMIN_PASSWORD` dans le dépôt. Les valeurs `V
 
 ## Architecture
 
-Le navigateur utilise Firebase pour l'authentification et les données, et appelle les fonctions `/api` hébergées sur Vercel pour les traitements IA et les services associés.
+```mermaid
+flowchart LR
+    Browser[Navigateur React]
+    Firebase[(Firebase Auth / Firestore)]
+    Vercel[Fonctions Vercel]
+    Groq[Groq : IA et transcription]
+    AELF[API AELF]
+
+    Browser -->|Auth et données| Firebase
+    Browser -->|/api| Vercel
+    Vercel --> Groq
+    Vercel --> AELF
+```
 
 ## À propos du projet
 
-Ce projet m'a notamment appris à migrer le stockage du navigateur vers Firestore et à tenir compte des limites de durée des fonctions serverless lors du traitement audio.
+C'est mon premier gros projet, réalisé avec l'aide de l'IA. J'y ai énormément appris et j'ai vraiment essayé de comprendre chaque partie de ce que je construisais, plutôt que de simplement reprendre des solutions sans en saisir le fonctionnement. Ce projet m'a notamment appris à migrer le stockage du navigateur vers Firestore et à tenir compte des limites de durée des fonctions serverless lors du traitement audio.
 
 ## Auteur
 
 **Alexis Atindehou** — étudiant en génie logiciel (ISI-SUPTECH / UNCHK), Dakar  
 GitHub : [@Alexis102005](https://github.com/Alexis102005)
+
+## Limites connues
+
+- La transcription audio n'est pas fiable (modèle gratuit peu précis, taille des requêtes limitée sur Vercel).
+- ELIA peut ajouter des tâches au calendrier, mais la détection de conflits et la priorisation ne sont pas terminées.
+
+## Prochaines étapes
+
+- Vérifier le jeton Firebase dans les fonctions `/api` et limiter les requêtes par utilisateur
+- Ajouter des tests
